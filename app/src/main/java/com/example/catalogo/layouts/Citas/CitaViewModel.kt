@@ -9,7 +9,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-
 data class CitaItem(
     val mascotaNombre: String,
     val servicioNombre: String,
@@ -20,40 +19,50 @@ data class CitaItem(
 class CitaViewModel : ViewModel() {
 
     var serviciosAgendados by mutableStateOf(listOf<CitaItem>())
-
     var servicioEnProceso by mutableStateOf<CitaItem?>(null)
 
     var nombreCliente by mutableStateOf("")
     var numeroEmergencia by mutableStateOf("")
 
-    // 🚨 CAMBIO 2: La temporal de fecha usa java.util.Date en lugar de LocalDate
     var fechaSeleccionadaTemp by mutableStateOf<Date?>(null)
     var horarioSeleccionadoTemp by mutableStateOf("")
 
-    // MÉTODO DE ORDENAMIENTO CRONOLÓGICO
+
+    // ------------------------------------------------
+    // ORDENAR POR FECHA + HORARIO
+    // ------------------------------------------------
+    private fun parseHorario(horario: String): Date {
+        val format = SimpleDateFormat("h:mm a", Locale.US)
+        return try { format.parse(horario) ?: Date(0) }
+        catch (_: ParseException) { Date(0) }
+    }
 
     fun ordenarServicios() {
         serviciosAgendados = serviciosAgendados.sortedWith(
-            // La comparación ahora se hace directamente entre objetos Date (para fecha)
-            // y el objeto Date devuelto por parseHorario (para hora).
             compareBy<CitaItem> { it.fecha }
                 .thenBy { parseHorario(it.horario) }
         )
     }
 
 
-    private fun parseHorario(horario: String): Date {
-        val format = SimpleDateFormat("h:mm a", Locale.US)
-        return try {
+    // ------------------------------------------------
+    // NUEVAS FUNCIONES (⚠ LAS QUE FALTABAN)
+    // ------------------------------------------------
 
-            format.parse(horario) ?: Date(0)
-        } catch (e: ParseException) {
-            println("Error al parsear horario: $horario. Usando fecha base (medianoche) como fallback.")
-            Date(0)
-        }
+    /** Se usa cuando el usuario quiere agregar más servicios */
+    fun validarCitaLista(): Boolean {
+        return fechaSeleccionadaTemp != null && horarioSeleccionadoTemp.isNotBlank()
+    }
+
+    /** Se usa cuando quiere terminar y pasar a confirmación */
+    fun validarFinalizacion(): Boolean {
+        return serviciosAgendados.isNotEmpty()
     }
 
 
+    // ------------------------------------------------
+    // Flujo principal
+    // ------------------------------------------------
     fun iniciarAsignacion(mascota: String, servicio: String) {
         fechaSeleccionadaTemp = null
         horarioSeleccionadoTemp = ""
@@ -61,48 +70,42 @@ class CitaViewModel : ViewModel() {
     }
 
     fun confirmarHorarioYAnadirALista(): Boolean {
-        val servicioActual = servicioEnProceso
+        val actual = servicioEnProceso ?: return false
+        if(fechaSeleccionadaTemp == null || horarioSeleccionadoTemp.isBlank()) return false
 
-        if (servicioActual != null && fechaSeleccionadaTemp != null && horarioSeleccionadoTemp.isNotBlank()) {
-            val itemCompleto = servicioActual.copy(
-                fecha = fechaSeleccionadaTemp,
-                horario = horarioSeleccionadoTemp
-            )
+        val final = actual.copy(
+            fecha = fechaSeleccionadaTemp,
+            horario = horarioSeleccionadoTemp
+        )
 
-            serviciosAgendados = serviciosAgendados + itemCompleto
-            ordenarServicios()
+        serviciosAgendados = serviciosAgendados + final
+        ordenarServicios()
 
-
-            servicioEnProceso = null
-            fechaSeleccionadaTemp = null
-            horarioSeleccionadoTemp = ""
-
-            return true
-        }
-        return false
+        servicioEnProceso = null
+        fechaSeleccionadaTemp = null
+        horarioSeleccionadoTemp = ""
+        return true
     }
 
-    fun guardarCitaMaestra() {
-        if (nombreCliente.isNotBlank() && numeroEmergencia.isNotBlank() && serviciosAgendados.isNotEmpty()) {
-            println("--- REGISTRO DE CITA MAESTRA EN BASE DE DATOS ---")
-            println("Cliente: $nombreCliente, Contacto: $numeroEmergencia")
-            serviciosAgendados.forEachIndexed { index, item ->
-
-                println("  [#${index + 1}] Mascota: ${item.mascotaNombre}, Servicio: ${item.servicioNombre}, Fecha/Hora: ${item.fecha} @ ${item.horario}")
-            }
-            println("-------------------------------------------------")
-            // Aquí iría la lógica final de guardar en la DB
-        } else {
-            println("ERROR: Faltan datos del cliente o no hay servicios agendados.")
-        }
-    }
 
     fun eliminarServicio(item: CitaItem) {
         serviciosAgendados = serviciosAgendados.filter { it != item }
     }
 
-    // Función de chequeo auxiliar
     fun tieneDatosTemporales(): Boolean {
         return fechaSeleccionadaTemp != null && horarioSeleccionadoTemp.isNotBlank()
+    }
+
+    fun guardarCitaMaestra() {
+        if (nombreCliente.isNotBlank() && numeroEmergencia.isNotBlank() && serviciosAgendados.isNotEmpty()) {
+            println("------ CITA GUARDADA ------")
+            println("Cliente: $nombreCliente")
+            println("Emergencia: $numeroEmergencia")
+            serviciosAgendados.forEach {
+                println("${it.mascotaNombre} - ${it.servicioNombre} - ${it.fecha} - ${it.horario}")
+            }
+        } else {
+            println("❌ No se pudo guardar, faltan datos!")
+        }
     }
 }

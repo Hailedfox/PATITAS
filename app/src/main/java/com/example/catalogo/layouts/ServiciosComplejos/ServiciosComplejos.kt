@@ -55,8 +55,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.catalogo.R
-import com.example.catalogo.layouts.ServiciosRapidos.DrawerContent
-import com.example.catalogo.layouts.ServiciosRapidos.DrawerItem
+import com.example.catalogo.layouts.componentes.DrawerContent
+import com.example.catalogo.layouts.componentes.DrawerItem
+
 import com.example.catalogo.layouts.ServiciosRapidos.colorFondoContenido
 import com.example.catalogo.layouts.ServiciosRapidos.montserratAlternatesFamily
 import kotlinx.coroutines.CoroutineScope

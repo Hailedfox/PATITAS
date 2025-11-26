@@ -24,14 +24,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.example.catalogo.R
 import com.example.catalogo.layouts.Citas.CitaViewModel
 import java.util.Calendar
 import java.text.SimpleDateFormat
 import java.util.Locale
-
 
 val montserratAlternatesFamily: FontFamily = FontFamily.Default
 val primaryColor = Color(0xFFD06A5B)
@@ -50,260 +48,171 @@ fun citas(
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
-
-
-    val year = calendar.get(Calendar.YEAR)
-    val month = calendar.get(Calendar.MONTH)
-    val day = calendar.get(Calendar.DAY_OF_MONTH)
-
-
     var expanded by remember { mutableStateOf(false) }
     var mensajeError by remember { mutableStateOf<String?>(null) }
 
-    val tipoServicioLimpio = tipoServicio.trim().lowercase()
-
-    val horariosDisponibles = if (tipoServicioLimpio == "rapido") {
-        listOf("8:00 AM", "8:30 AM", "9:00 AM", "9:30 AM", "10:00 AM", "10:30 AM", "11:00 AM", "11:30 AM", "12:00 PM", "12:30 PM", "1:00 PM")
+    val horariosDisponibles = if (tipoServicio.lowercase().trim() == "rapido") {
+        listOf("8:00 AM","8:30 AM","9:00 AM","9:30 AM","10:00 AM","10:30 AM","11:00 AM","11:30 AM",
+            "12:00 PM","12:30 PM","1:00 PM")
     } else {
-        listOf("2:00 PM", "3:00 PM", "4:00 PM", "5:00 PM", "6:00 PM")
+        listOf("2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM")
     }
 
-
-    LaunchedEffect(mascotaNombre, servicioNombre) {
-
-        if (viewModel.servicioEnProceso == null && mascotaNombre.isNotBlank() && servicioNombre.isNotBlank()) {
+    // ---------------- INICIALIZACIÓN AUTOMÁTICA ----------------
+    LaunchedEffect(Unit) {
+        if (viewModel.servicioEnProceso == null && mascotaNombre.isNotBlank()) {
             viewModel.iniciarAsignacion(mascotaNombre, servicioNombre)
         }
-
-        if (viewModel.horarioSeleccionadoTemp.isBlank()) {
-            viewModel.horarioSeleccionadoTemp = horariosDisponibles.firstOrNull() ?: ""
-        }
+        if (viewModel.horarioSeleccionadoTemp.isBlank())
+            viewModel.horarioSeleccionadoTemp = horariosDisponibles.first()
     }
 
 
+    // ---------------- DATE PICKER ----------------
     val datePickerDialog = DatePickerDialog(
         context,
-        { _, selectedYear, selectedMonth, selectedDay ->
-            val selectedCalendar = Calendar.getInstance().apply {
-                set(selectedYear, selectedMonth, selectedDay)
-                set(Calendar.HOUR_OF_DAY, 0)
-                set(Calendar.MINUTE, 0)
-                set(Calendar.SECOND, 0)
-                set(Calendar.MILLISECOND, 0)
-            }
-            viewModel.fechaSeleccionadaTemp = selectedCalendar.time
+        { _, y, m, d ->
+            viewModel.fechaSeleccionadaTemp = Calendar.getInstance().apply { set(y,m,d) }.time
             mensajeError = null
         },
-        year, month, day
-    ).apply {
-        datePicker.minDate = calendar.timeInMillis
-        calendar.add(Calendar.MONTH, 6)
-        datePicker.maxDate = calendar.timeInMillis
-        calendar.add(Calendar.MONTH, -6)
-    }
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    ).apply { datePicker.minDate = System.currentTimeMillis() }
 
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(Color.White)
-    ) {
+    // ---------------- UI ----------------
+    Box(Modifier.fillMaxSize().background(Color.White)) {
 
-        val CurvedBottomShape = GenericShape { size, _ ->
-            val width = size.width
-            val height = size.height
-            moveTo(0f, 0f)
-            lineTo(0f, height * 0.65f)
-            quadraticBezierTo(width / 2, height, width, height * 0.65f)
-            lineTo(width, 0f)
-            close()
+        val CurvedShape = GenericShape { s,_ ->
+            moveTo(0f,0f)
+            lineTo(0f,s.height*0.65f)
+            quadraticBezierTo(s.width/2,s.height,s.width,s.height*0.65f)
+            lineTo(s.width,0f)
         }
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(230.dp)
-                .clip(CurvedBottomShape)
-        ) {
+        // HEADER
+        Box(Modifier.fillMaxWidth().height(230.dp).clip(CurvedShape)) {
             Image(
                 painter = painterResource(id = R.drawable.encabezado3),
                 contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .border(2.dp, Color.Black, CurvedBottomShape)
-                    .graphicsLayer {
-                        scaleX = 1.24f
-                        scaleY = 1.24f
-                        translationY = -50f
-                    },
-                contentScale = ContentScale.Fit
+                modifier = Modifier.fillMaxSize().border(2.dp,Color.Black,CurvedShape),
+                contentScale = ContentScale.Crop
             )
         }
 
-        Row( modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 50.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically )
-        {
+        // BACK
+        Row(Modifier.padding(20.dp)) {
             Image(
                 painter = painterResource(R.drawable.atras),
                 contentDescription = "Regresar",
-                colorFilter = ColorFilter.tint(color = Color.White),
-                modifier = Modifier
-                    .size(28.dp)
-                    .clickable { navController.popBackStack() }
+                modifier = Modifier.size(28.dp).clickable { navController.popBackStack() },
+                colorFilter = ColorFilter.tint(Color.White)
             )
         }
 
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.TopCenter)
-                .padding(top = 170.dp),
+            Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 170.dp),
             horizontalAlignment = Alignment.CenterHorizontally
-        ) {
+        ){
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 50.dp),
-                shape = RoundedCornerShape(20.dp),
+                Modifier.fillMaxWidth(.9f),
                 color = primaryColorMenu,
-                shadowElevation = 4.dp,
-            ) {
-
-                val currentService = viewModel.servicioEnProceso?.servicioNombre ?: servicioNombre
+                shape = RoundedCornerShape(20.dp)
+            ){
                 Text(
-                    text = "Fecha y Horario (${currentService})",
-                    fontFamily = montserratAlternatesFamily,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 25.sp,
+                    "Fecha y Horario ($servicioNombre)",
+                    modifier = Modifier.padding(12.dp),
+                    fontSize = 22.sp,
                     color = Color.White,
-                    modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp),
+                    fontWeight = FontWeight.Bold,
                     textAlign = TextAlign.Center
                 )
             }
 
-            Spacer(modifier = Modifier.height(25.dp))
+            Spacer(Modifier.height(25.dp))
 
-            // Fecha
-            Text("Selecciona una fecha para tu cita", fontFamily = montserratAlternatesFamily, fontWeight = FontWeight.Medium, fontSize = 18.sp, color = Color.Black)
-            Spacer(modifier = Modifier.height(20.dp))
+
+            //------------------ FECHA -----------------
+            Text("Selecciona una fecha",fontSize=17.sp,fontWeight=FontWeight.SemiBold)
 
             Button(
                 onClick = { datePickerDialog.show() },
-                colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-                modifier = Modifier.height(55.dp).width(250.dp)
-            ) {
-                Text("Abrir calendario", color = Color.White, fontSize = 20.sp)
-            }
+                colors = ButtonDefaults.buttonColors(primaryColor),
+                modifier=Modifier.height(50.dp).width(230.dp).padding(top=10.dp)
+            ) { Text("Abrir Calendario", color=Color.White,fontSize=18.sp) }
 
-            Spacer(modifier = Modifier.height(20.dp))
 
             viewModel.fechaSeleccionadaTemp?.let {
-                val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
-                Text(
-                    text = "Fecha seleccionada: ${dateFormat.format(it)}",
-                    fontFamily = montserratAlternatesFamily,
-                    fontSize = 16.sp,
-                    color = Color.Black
-                )
+                Text("📅 ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)}")
             }
 
-            Spacer(modifier = Modifier.height(25.dp))
+            Spacer(Modifier.height(30.dp))
 
-            // Horario
-            Text("Selecciona un horario de atención", fontFamily = montserratAlternatesFamily, fontWeight = FontWeight.Medium, fontSize = 18.sp, color = Color.Black)
-            Spacer(modifier = Modifier.height(10.dp))
 
-            ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
+            //------------------ HORARIO -----------------
+            Text("Selecciona horario",fontSize=17.sp,fontWeight=FontWeight.SemiBold)
+
+            ExposedDropdownMenuBox(expanded,{expanded=!expanded}) {
                 TextField(
-                    value = viewModel.horarioSeleccionadoTemp,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Horario") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier.menuAnchor().fillMaxWidth(0.9f),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.White, unfocusedContainerColor = Color.White,
-                        focusedIndicatorColor = primaryColor, unfocusedIndicatorColor = Color.Gray
-                    )
+                    value=viewModel.horarioSeleccionadoTemp,
+                    onValueChange={},
+                    readOnly=true,
+                    modifier=Modifier.menuAnchor().fillMaxWidth(.9f),
+                    shape=RoundedCornerShape(12.dp),
+                    trailingIcon={ExposedDropdownMenuDefaults.TrailingIcon(expanded)}
                 )
 
-                ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                    horariosDisponibles.forEach { horario ->
+                ExposedDropdownMenu(expanded,{expanded=false}){
+                    horariosDisponibles.forEach{ h->
                         DropdownMenuItem(
-                            text = { Text(horario) },
-                            onClick = {
-                                viewModel.horarioSeleccionadoTemp = horario
-                                expanded = false
-                                mensajeError = null
+                            text={Text(h)},
+                            onClick={
+                                viewModel.horarioSeleccionadoTemp=h
+                                expanded=false
+                                mensajeError=null
                             }
                         )
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(Modifier.height(35.dp))
 
-            mensajeError?.let {
-                Text(it, color = Color.Red, fontFamily = montserratAlternatesFamily, modifier = Modifier.padding(bottom = 10.dp), textAlign = TextAlign.Center)
-            }
 
-            // Botones
+            //------------------ BOTÓN AGENDAR -----------------
             Button(
                 onClick = {
-                    if (viewModel.servicioEnProceso != null && viewModel.tieneDatosTemporales()) {
-                        viewModel.confirmarHorarioYAnadirALista()
-                        navController.navigate("Menu") {
-                            popUpTo("Menu") { inclusive = true }
-                        }
-                    } else {
-                        mensajeError = "Debes seleccionar una fecha y un horario para agendar más servicios."
-                    }
+                    if(viewModel.confirmarHorarioYAnadirALista())
+                        navController.navigate("Menu")
+                    else mensajeError="⚠ Selecciona fecha y horario"
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = primaryColor),
-                modifier = Modifier.height(55.dp).width(250.dp).padding(bottom = 10.dp)
-            ) {
-                Text("Agendar Más Servicios", color = Color.White, fontSize = 18.sp)
-            }
+                modifier=Modifier.height(55.dp).width(250.dp),
+                colors = ButtonDefaults.buttonColors(primaryColor)
+            ){ Text("Agendar más servicios",color=Color.White,fontSize=18.sp) }
 
 
+            //------------------ BOTÓN FINAL -----------------
             Button(
                 onClick = {
-                    val datosTemporalesListos = viewModel.servicioEnProceso != null && viewModel.tieneDatosTemporales()
-                    val serviciosPrevios = viewModel.serviciosAgendados.isNotEmpty()
-
-                    if (datosTemporalesListos) {
-                        viewModel.confirmarHorarioYAnadirALista()
+                    if(viewModel.confirmarHorarioYAnadirALista() || viewModel.serviciosAgendados.isNotEmpty())
                         navController.navigate("citas2")
-                    } else if (serviciosPrevios) {
-                        navController.navigate("citas2")
-                    } else {
-                        mensajeError = "Debes seleccionar al menos un servicio con fecha y hora para finalizar."
-                    }
+                    else mensajeError="⚠ Debes registrar mínimo 1 servicio"
                 },
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
-                modifier = Modifier.height(55.dp).width(250.dp)
-            ) {
-                Text("Terminar de Agendar", color = Color.White, fontSize = 18.sp)
-            }
+                modifier=Modifier.height(55.dp).width(250.dp).padding(top=10.dp),
+                colors=ButtonDefaults.buttonColors(Color.Gray)
+            ){ Text("Terminar de agendar",color=Color.White,fontSize=18.sp) }
+
+
+            mensajeError?.let { Text(it,color=Color.Red,modifier=Modifier.padding(top=10.dp)) }
         }
 
-        // Logo inferior (sin cambios)
-        Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = 10.dp)
-        ) {
-            Image(
-                painter = painterResource(R.drawable.logo_negro),
-                contentDescription = "Logo",
-                modifier = Modifier.height(42.dp).fillMaxWidth(0.5f),
-                contentScale = ContentScale.Fit
-            )
-        }
+
+        Image(
+            painter=painterResource(R.drawable.logo_negro),
+            contentDescription="Logo",
+            modifier=Modifier.align(Alignment.BottomCenter).padding(10.dp).height(40.dp)
+        )
     }
 }

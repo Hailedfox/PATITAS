@@ -35,7 +35,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
-import com.example.catalogo.layouts.Login.LoginViewModel
 import com.example.catalogo.layouts.perfil.getUriFromPrefs
 
 val montserratAlternatesFamily: FontFamily = FontFamily.Default
@@ -46,8 +45,7 @@ val colorFondoContenido = Color(0xFFEEEEEE)
 @Composable
 fun ServiciosRapidos(
     navController: NavController,
-    citaViewModel: CitaViewModel = viewModel(),
-    loginViewModel: LoginViewModel = viewModel()
+    citaViewModel: CitaViewModel = viewModel() // 🔥 LoginViewModel eliminado
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -88,9 +86,7 @@ fun ServiciosRapidos(
                         modifier = Modifier
                             .fillMaxSize()
                             .border(2.dp, Color.Black, CurvedBottomShape)
-                            .graphicsLayer {
-                                translationY = -100f
-                            },
+                            .graphicsLayer { translationY = -100f },
                         contentScale = ContentScale.Crop
                     )
 
@@ -117,7 +113,7 @@ fun ServiciosRapidos(
                                 .size(35.dp)
                                 .clip(CircleShape)
                                 .background(Color.White)
-                                .clickable { navController.navigate("MenuUsuario")},
+                                .clickable { navController.navigate("MenuUsuario") },
                             contentAlignment = Alignment.Center
                         ) {
 
@@ -150,7 +146,7 @@ fun ServiciosRapidos(
                 ) {
                     Text(
                         text = "Servicios Rápidos",
-                        fontFamily = com.example.catalogo.ui.theme.montserratAlternatesFamily,
+                        fontFamily = montserratAlternatesFamily,
                         fontWeight = FontWeight.Bold,
                         fontSize = 25.sp,
                         color = Color.White,
@@ -170,9 +166,9 @@ fun ServiciosRapidos(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    ServicioItem(R.drawable.consultas, "Consultas", "Selecciona tu mascota", navController, citaViewModel, tipoServicio = "rapido")
-                    ServicioItem(R.drawable.desparasitacion, "Desparasitación", "Selecciona tu mascota", navController, citaViewModel, tipoServicio = "rapido")
-                    ServicioItem(R.drawable.vacunas, "Vacunación", "Selecciona tu mascota", navController, citaViewModel, tipoServicio = "rapido")
+                    ServicioItem(R.drawable.consultas, "Consultas", "Selecciona tu mascota", navController, citaViewModel, "rapido")
+                    ServicioItem(R.drawable.desparasitacion, "Desparasitación", "Selecciona tu mascota", navController, citaViewModel, "rapido")
+                    ServicioItem(R.drawable.vacunas, "Vacunación", "Selecciona tu mascota", navController, citaViewModel, "rapido")
                 }
 
                 Box(
@@ -221,7 +217,7 @@ fun ServicioItem(
                 .fillMaxWidth(0.9f)
                 .height(180.dp)
                 .clip(OvalShape)
-                .border(width = 2.dp, color = Color.Black, shape = OvalShape)
+                .border(width = 2.dp, Color.Black, shape = OvalShape)
         )
 
         Spacer(modifier = Modifier.height(8.dp))
@@ -249,17 +245,7 @@ fun ServicioItem(
                 modifier = Modifier
                     .menuAnchor()
                     .fillMaxWidth(0.9f),
-                trailingIcon = {
-                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
-                },
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFF5F5F5),
-                    unfocusedContainerColor = Color(0xFFF5F5F5),
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent,
-                    focusedTextColor = Color.Black,
-                    unfocusedTextColor = Color.Black
-                ),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
                 shape = RoundedCornerShape(50.dp)
             )
 
@@ -275,125 +261,15 @@ fun ServicioItem(
                             expanded = false
 
                             citaViewModel.iniciarAsignacion(
-                                mascota = selectedOption,
+                                mascota = option,
                                 servicio = titulo
                             )
 
-                            // *** CORRECCIÓN CRÍTICA DE NAVEGACIÓN ***
-                            val mascota = selectedOption
-                            val servicio = titulo
-                            navController.navigate("Citas/$tipoServicio?mascotaNombre=$mascota&servicioNombre=$servicio")
+                            navController.navigate("Citas/$tipoServicio?mascotaNombre=$option&servicioNombre=$titulo")
                         }
                     )
                 }
             }
         }
-    }
-}
-
-@Composable
-fun DrawerContent(
-    drawerState: DrawerState,
-    scope: CoroutineScope,
-    navController: NavController,
-    profilePhotoUri: Uri?
-) {
-    ModalDrawerSheet(
-        modifier = Modifier.fillMaxWidth(0.65f),
-        drawerContainerColor = Color.White
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 40.dp, bottom = 20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(80.dp)
-                    .clip(CircleShape)
-                    .background(Color.White)
-                    .clickable { navController.navigate("MenuUsuario") },
-                contentAlignment = Alignment.Center
-            ) {
-                if (profilePhotoUri != null) {
-                    AsyncImage(
-                        model = profilePhotoUri,
-                        contentDescription = "Foto de perfil",
-                        modifier = Modifier.fillMaxSize().clip(CircleShape),
-                        contentScale = ContentScale.Crop
-                    )
-                } else {
-                    Image(
-                        painter = painterResource(R.drawable.usuario),
-                        contentDescription = "Perfil",
-                        modifier = Modifier.size(80.dp)
-                    )
-                }
-            }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = "Usuario",
-                fontSize = 20.sp,
-                fontFamily = montserratAlternatesFamily,
-                color = Color.Black
-            )
-        }
-
-        Divider(
-            modifier = Modifier.padding(horizontal = 16.dp),
-            thickness = 1.dp,
-            color = Color.LightGray
-        )
-
-        Column(modifier = Modifier.padding(vertical = 10.dp)) {
-            DrawerItem("Mis citas", R.drawable.citas, Color.Black) {
-                scope.launch {
-                    drawerState.close()
-                    navController.navigate("Mis citas")
-                }
-            }
-            DrawerItem("Hoja clínica veterinaria", R.drawable.expediente, Color.Black) {
-                scope.launch {
-                    drawerState.close()
-                navController.navigate("Expediente")
-                }
-            }
-            DrawerItem("Nosotros", R.drawable.informacion, Color.Black) {
-                scope.launch {
-                    drawerState.close()
-                    navController.navigate("nosotros")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun DrawerItem(
-    title: String,
-    iconResId: Int,
-    color: Color,
-    onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 24.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Image(
-            painter = painterResource(iconResId),
-            contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            colorFilter = ColorFilter.tint(color)
-        )
-        Spacer(Modifier.width(16.dp))
-        Text(
-            text = title,
-            fontSize = 16.sp,
-            fontFamily = montserratAlternatesFamily,
-            color = color
-        )
     }
 }
