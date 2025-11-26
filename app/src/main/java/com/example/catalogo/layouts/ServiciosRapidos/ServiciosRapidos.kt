@@ -31,11 +31,13 @@ import androidx.navigation.NavController
 import com.example.catalogo.R
 import com.example.catalogo.layouts.menu.DrawerContent
 import com.example.catalogo.layouts.Citas.CitaViewModel
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.AsyncImage
 import com.example.catalogo.layouts.perfil.getUriFromPrefs
+import com.example.catalogo.data.BDMascota.MascotaListaViewModel
+import com.example.catalogo.data.supabase.models.MascotaDto   // ⚠ Necesario para lista
 
 val montserratAlternatesFamily: FontFamily = FontFamily.Default
 val primaryColor = Color(0xFFD06A5B)
@@ -45,13 +47,19 @@ val colorFondoContenido = Color(0xFFEEEEEE)
 @Composable
 fun ServiciosRapidos(
     navController: NavController,
-    citaViewModel: CitaViewModel = viewModel() // 🔥 LoginViewModel eliminado
+    citaViewModel: CitaViewModel = viewModel(),
+    mascotaVM: MascotaListaViewModel = viewModel()  // 👈 cargamos mascotas desde Supabase
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    // foto de perfil
+    // ------------------ 🔥 Cargar mascotas reales al abrir pantalla ------------------
+    LaunchedEffect(Unit) { mascotaVM.cargarMascotas() }
+    val mascotas by mascotaVM.mascotas.collectAsState()
+    // -------------------------------------------------------------------------------
+
+    // FOTO PERFIL
     val context = LocalContext.current
     val profilePhotoUri by remember { mutableStateOf(getUriFromPrefs(context)) }
 
@@ -64,6 +72,9 @@ fun ServiciosRapidos(
                     .fillMaxSize()
                     .background(Color.White)
             ) {
+
+                // ======================= 🟥 Tu encabezado ORIGINAL intacto 🟥 =======================
+
                 val CurvedBottomShape = GenericShape { size, _ ->
                     val width = size.width
                     val height = size.height
@@ -135,6 +146,8 @@ fun ServiciosRapidos(
                     }
                 }
 
+                // ------------------------------ Contenedor blanco original -------------------------------
+
                 Surface(
                     modifier = Modifier
                         .padding(top = 170.dp)
@@ -166,9 +179,9 @@ fun ServiciosRapidos(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
 
-                    ServicioItem(R.drawable.consultas, "Consultas", "Selecciona tu mascota", navController, citaViewModel, "rapido")
-                    ServicioItem(R.drawable.desparasitacion, "Desparasitación", "Selecciona tu mascota", navController, citaViewModel, "rapido")
-                    ServicioItem(R.drawable.vacunas, "Vacunación", "Selecciona tu mascota", navController, citaViewModel, "rapido")
+                    ServicioItem("Consultas", mascotas, navController, citaViewModel)
+                    ServicioItem("Desparasitación", mascotas, navController, citaViewModel)
+                    ServicioItem("Vacunación", mascotas, navController, citaViewModel)
                 }
 
                 Box(
@@ -188,20 +201,17 @@ fun ServiciosRapidos(
     )
 }
 
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServicioItem(
-    imageResId: Int,
     titulo: String,
-    hintText: String,
+    mascotas: List<MascotaDto>, // 🟢 ahora con datos reales desde Supabase
     navController: NavController,
-    citaViewModel: CitaViewModel,
-    tipoServicio: String = "rapido"
+    citaViewModel: CitaViewModel
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selectedOption by remember { mutableStateOf("") }
-
-    val OvalShape = RoundedCornerShape(500.dp)
 
     Column(
         modifier = Modifier
@@ -209,63 +219,35 @@ fun ServicioItem(
             .padding(bottom = 32.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Image(
-            painter = painterResource(id = imageResId),
-            contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
-                .fillMaxWidth(0.9f)
-                .height(180.dp)
-                .clip(OvalShape)
-                .border(width = 2.dp, Color.Black, shape = OvalShape)
-        )
+        Text(titulo, fontSize = 22.sp, fontWeight = FontWeight.Bold)
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(Modifier.height(10.dp))
 
-        Text(
-            text = titulo,
-            fontFamily = montserratAlternatesFamily,
-            fontWeight = FontWeight.Medium,
-            fontSize = 18.sp,
-            color = Color.Black,
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(8.dp))
-
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
+        ExposedDropdownMenuBox(expanded = expanded, onExpandedChange = { expanded = !expanded }) {
             TextField(
                 value = selectedOption,
                 onValueChange = {},
+                placeholder = { Text("Selecciona una mascota") },
                 readOnly = true,
-                placeholder = { Text(hintText, color = Color.Gray) },
-                modifier = Modifier
-                    .menuAnchor()
-                    .fillMaxWidth(0.9f),
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                shape = RoundedCornerShape(50.dp)
+                modifier = Modifier.menuAnchor().fillMaxWidth(0.9f),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }
             )
 
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false }
-            ) {
-                listOf("Mascota 1", "Mascota 2", "Mascota 3").forEach { option ->
+            ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+
+                mascotas.forEach { m ->
                     DropdownMenuItem(
-                        text = { Text(option) },
+                        text = { Text(m.nombre) },
                         onClick = {
-                            selectedOption = option
+                            selectedOption = m.nombre
                             expanded = false
 
                             citaViewModel.iniciarAsignacion(
-                                mascota = option,
+                                mascota = m.nombre,
                                 servicio = titulo
                             )
 
-                            navController.navigate("Citas/$tipoServicio?mascotaNombre=$option&servicioNombre=$titulo")
+                            navController.navigate("Citas/rapido?mascotaNombre=${m.nombre}&servicioNombre=$titulo")
                         }
                     )
                 }

@@ -15,7 +15,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -58,17 +57,16 @@ fun citas(
         listOf("2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM")
     }
 
-    // ---------------- INICIALIZACIÓN AUTOMÁTICA ----------------
+    // ==== Mantiene mascota / servicio seleccionado
     LaunchedEffect(Unit) {
-        if (viewModel.servicioEnProceso == null && mascotaNombre.isNotBlank()) {
+        if (viewModel.servicioEnProceso == null && mascotaNombre.isNotBlank())
             viewModel.iniciarAsignacion(mascotaNombre, servicioNombre)
-        }
+
         if (viewModel.horarioSeleccionadoTemp.isBlank())
             viewModel.horarioSeleccionadoTemp = horariosDisponibles.first()
     }
 
-
-    // ---------------- DATE PICKER ----------------
+    // ==== DatePicker
     val datePickerDialog = DatePickerDialog(
         context,
         { _, y, m, d ->
@@ -81,7 +79,7 @@ fun citas(
     ).apply { datePicker.minDate = System.currentTimeMillis() }
 
 
-    // ---------------- UI ----------------
+    // UI
     Box(Modifier.fillMaxSize().background(Color.White)) {
 
         val CurvedShape = GenericShape { s,_ ->
@@ -91,17 +89,17 @@ fun citas(
             lineTo(s.width,0f)
         }
 
-        // HEADER
+        // Header
         Box(Modifier.fillMaxWidth().height(230.dp).clip(CurvedShape)) {
             Image(
                 painter = painterResource(id = R.drawable.encabezado3),
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize().border(2.dp,Color.Black,CurvedShape),
-                contentScale = ContentScale.Crop
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().border(2.dp,Color.Black,CurvedShape)
             )
         }
 
-        // BACK
+        // Back Button
         Row(Modifier.padding(20.dp)) {
             Image(
                 painter = painterResource(R.drawable.atras),
@@ -111,11 +109,11 @@ fun citas(
             )
         }
 
-
         Column(
             Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 170.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ){
+
             Surface(
                 Modifier.fillMaxWidth(.9f),
                 color = primaryColorMenu,
@@ -133,9 +131,8 @@ fun citas(
 
             Spacer(Modifier.height(25.dp))
 
-
-            //------------------ FECHA -----------------
-            Text("Selecciona una fecha",fontSize=17.sp,fontWeight=FontWeight.SemiBold)
+            // ==== FECHA
+            Text("Selecciona una fecha", fontSize=17.sp, fontWeight=FontWeight.SemiBold)
 
             Button(
                 onClick = { datePickerDialog.show() },
@@ -143,35 +140,33 @@ fun citas(
                 modifier=Modifier.height(50.dp).width(230.dp).padding(top=10.dp)
             ) { Text("Abrir Calendario", color=Color.White,fontSize=18.sp) }
 
-
             viewModel.fechaSeleccionadaTemp?.let {
                 Text("📅 ${SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()).format(it)}")
             }
 
             Spacer(Modifier.height(30.dp))
 
-
-            //------------------ HORARIO -----------------
-            Text("Selecciona horario",fontSize=17.sp,fontWeight=FontWeight.SemiBold)
+            // ==== HORARIO
+            Text("Selecciona horario", fontSize=17.sp, fontWeight=FontWeight.SemiBold)
 
             ExposedDropdownMenuBox(expanded,{expanded=!expanded}) {
                 TextField(
-                    value=viewModel.horarioSeleccionadoTemp,
-                    onValueChange={},
-                    readOnly=true,
-                    modifier=Modifier.menuAnchor().fillMaxWidth(.9f),
-                    shape=RoundedCornerShape(12.dp),
-                    trailingIcon={ExposedDropdownMenuDefaults.TrailingIcon(expanded)}
+                    value = viewModel.horarioSeleccionadoTemp,
+                    onValueChange = {},
+                    readOnly = true,
+                    modifier = Modifier.menuAnchor().fillMaxWidth(.9f),
+                    shape = RoundedCornerShape(12.dp),
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded) }
                 )
 
-                ExposedDropdownMenu(expanded,{expanded=false}){
-                    horariosDisponibles.forEach{ h->
+                ExposedDropdownMenu(expanded,{expanded=false}) {
+                    horariosDisponibles.forEach { h ->
                         DropdownMenuItem(
-                            text={Text(h)},
-                            onClick={
-                                viewModel.horarioSeleccionadoTemp=h
-                                expanded=false
-                                mensajeError=null
+                            text = { Text(h) },
+                            onClick = {
+                                viewModel.horarioSeleccionadoTemp = h
+                                expanded = false
+                                mensajeError = null
                             }
                         )
                     }
@@ -180,39 +175,39 @@ fun citas(
 
             Spacer(Modifier.height(35.dp))
 
-
-            //------------------ BOTÓN AGENDAR -----------------
+            // ==== BOTÓN → AGENDAR MÁS
             Button(
                 onClick = {
                     if(viewModel.confirmarHorarioYAnadirALista())
                         navController.navigate("Menu")
-                    else mensajeError="⚠ Selecciona fecha y horario"
+                    else mensajeError = "⚠ Selecciona fecha y horario"
                 },
-                modifier=Modifier.height(55.dp).width(250.dp),
+                modifier = Modifier.height(55.dp).width(250.dp),
                 colors = ButtonDefaults.buttonColors(primaryColor)
-            ){ Text("Agendar más servicios",color=Color.White,fontSize=18.sp) }
+            ){
+                Text("Agendar más servicios", color=Color.White, fontSize=18.sp)
+            }
 
-
-            //------------------ BOTÓN FINAL -----------------
+            // ==== BOTÓN → IR A CONFIRMACIÓN
             Button(
                 onClick = {
                     if(viewModel.confirmarHorarioYAnadirALista() || viewModel.serviciosAgendados.isNotEmpty())
                         navController.navigate("citas2")
                     else mensajeError="⚠ Debes registrar mínimo 1 servicio"
                 },
-                modifier=Modifier.height(55.dp).width(250.dp).padding(top=10.dp),
-                colors=ButtonDefaults.buttonColors(Color.Gray)
-            ){ Text("Terminar de agendar",color=Color.White,fontSize=18.sp) }
+                modifier = Modifier.height(55.dp).width(250.dp).padding(top=10.dp),
+                colors = ButtonDefaults.buttonColors(Color.Gray)
+            ){
+                Text("Terminar de agendar", color=Color.White, fontSize=18.sp)
+            }
 
-
-            mensajeError?.let { Text(it,color=Color.Red,modifier=Modifier.padding(top=10.dp)) }
+            mensajeError?.let { Text(it, color=Color.Red, modifier=Modifier.padding(top=10.dp)) }
         }
 
-
         Image(
-            painter=painterResource(R.drawable.logo_negro),
-            contentDescription="Logo",
-            modifier=Modifier.align(Alignment.BottomCenter).padding(10.dp).height(40.dp)
+            painter = painterResource(R.drawable.logo_negro),
+            contentDescription = null,
+            modifier = Modifier.align(Alignment.BottomCenter).padding(10.dp).height(40.dp)
         )
     }
 }

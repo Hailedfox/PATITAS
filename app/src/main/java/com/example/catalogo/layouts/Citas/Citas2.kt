@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
@@ -35,57 +34,51 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-val montserratAlternatesFamily: FontFamily = FontFamily.Default
 val primaryColor = Color(0xFFD06A5B)
 val primaryColorMenu = Color(0xFFD06A5B)
 
 @Composable
-fun citas2 (
+fun citas2(
     navController: NavController,
     viewModel: CitaViewModel = viewModel()
 ) {
+
     val servicios = viewModel.serviciosAgendados
     val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
     val scope = rememberCoroutineScope()
     val repo = CitaSupabaseRepository()
 
-    val CurvedBottomShape = GenericShape { size, _ ->
-        moveTo(0f, 0f)
-        lineTo(0f, size.height * 0.65f)
-        quadraticBezierTo(size.width / 2, size.height, size.width, size.height * 0.65f)
-        lineTo(size.width, 0f)
+    val CurvedBottomShape = GenericShape { size,_ ->
+        moveTo(0f,0f)
+        lineTo(0f,size.height*0.65f)
+        quadraticBezierTo(size.width/2,size.height,size.width,size.height*0.65f)
+        lineTo(size.width,0f)
     }
 
     Box(Modifier.fillMaxSize().background(Color.White)) {
 
-        // ---- Encabezado gráfico
+        // Header
         Box(Modifier.fillMaxWidth().height(230.dp).clip(CurvedBottomShape)) {
             Image(
                 painter = painterResource(id = R.drawable.encabezado3),
                 contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .border(2.dp, Color.Black, CurvedBottomShape)
-                    .graphicsLayer { scaleX = 1.22f; scaleY = 1.22f; translationY = -50f },
+                modifier = Modifier.fillMaxSize().border(2.dp, Color.Black, CurvedBottomShape),
                 contentScale = ContentScale.Crop
             )
         }
 
-        // ---- Botón regresar
-        Row(
-            Modifier.fillMaxWidth().padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        // Back
+        Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(R.drawable.atras),
                 contentDescription = "Regresar",
-                colorFilter = ColorFilter.tint(Color.White),
-                modifier = Modifier.size(28.dp).clickable { navController.popBackStack() }
+                modifier = Modifier.size(28.dp).clickable { navController.popBackStack() },
+                colorFilter = ColorFilter.tint(Color.White)
             )
         }
 
         Column(
-            Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top = 170.dp, start = 20.dp, end = 20.dp),
+            Modifier.fillMaxWidth().align(Alignment.TopCenter).padding(top=170.dp, start=20.dp, end=20.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
 
@@ -94,15 +87,13 @@ fun citas2 (
                 color = primaryColorMenu,
                 shadowElevation = 4.dp,
                 modifier = Modifier.fillMaxWidth(0.9f)
-            ) {
+            ){
                 Text("Confirmación de Cita", fontSize = 25.sp, color = Color.White,
-                    fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp),
-                    textAlign = TextAlign.Center)
+                    fontWeight = FontWeight.Bold, modifier = Modifier.padding(12.dp), textAlign = TextAlign.Center)
             }
 
             Spacer(Modifier.height(25.dp))
 
-            // -------- LISTA DE CITAS --------
             Text("Resumen de Servicios Agendados (${servicios.size}):",
                 fontWeight = FontWeight.Bold, fontSize = 18.sp,
                 modifier = Modifier.fillMaxWidth(0.9f).padding(bottom = 10.dp)
@@ -115,67 +106,58 @@ fun citas2 (
                     .border(1.dp, primaryColor, RoundedCornerShape(10.dp))
                     .padding(10.dp)
             ) {
-
                 if (servicios.isEmpty()) {
                     item { Text("No se han seleccionado servicios.", color = Color.Red,
-                        modifier = Modifier.fillMaxWidth().padding(14.dp),
-                        textAlign = TextAlign.Center)
-                    }
-                } else {
-                    items(servicios) { s ->
-                        val fecha = s.fecha?.let { dateFormat.format(it) } ?: "Sin fecha"
+                        modifier = Modifier.fillMaxWidth().padding(14.dp), textAlign = TextAlign.Center) }
+                } else items(servicios) { s ->
+                    val fecha = s.fecha?.let { dateFormat.format(it) } ?: "Sin fecha"
 
-                        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically) {
 
-                            Column(Modifier.weight(1f)) {
-                                Text("Mascota: ${s.mascotaNombre} (${s.servicioNombre})",
-                                    fontWeight = FontWeight.SemiBold)
-                                Text("📅 $fecha   🕒 ${s.horario}")
-                            }
-
-                            IconButton(onClick = { viewModel.eliminarServicio(s) }) {
-                                Icon(Icons.Default.Delete, contentDescription = null, tint = primaryColor)
-                            }
+                        Column(Modifier.weight(1f)) {
+                            Text("Mascota: ${s.mascotaNombre} (${s.servicioNombre})", fontWeight = FontWeight.SemiBold)
+                            Text("📅 $fecha    🕒 ${s.horario}")
                         }
-                        Divider()
+
+                        IconButton(onClick = { viewModel.eliminarServicio(s) }) {
+                            Icon(Icons.Default.Delete, contentDescription = null, tint = primaryColor)
+                        }
                     }
+                    Divider()
                 }
             }
 
             Spacer(Modifier.height(20.dp))
 
-            // -------- Datos del cliente --------
-            Text("Completa tus datos:", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-
+            // Datos cliente
             OutlinedTextField(
                 value = viewModel.nombreCliente,
                 onValueChange = { viewModel.nombreCliente = it },
                 label = { Text("Nombre del cliente") },
-                modifier = Modifier.fillMaxWidth(0.9f).padding(top = 10.dp)
+                modifier = Modifier.fillMaxWidth(0.9f).padding(top=10.dp)
             )
 
             OutlinedTextField(
                 value = viewModel.numeroEmergencia,
                 onValueChange = { viewModel.numeroEmergencia = it },
                 label = { Text("Número de emergencia") },
-                modifier = Modifier.fillMaxWidth(0.9f).padding(top = 10.dp)
+                modifier = Modifier.fillMaxWidth(0.9f).padding(top=10.dp)
             )
 
             Spacer(Modifier.height(30.dp))
 
-            // -------- BOTÓN FINAL -> SUPABASE --------
+
+            // ---- GUARDAR EN SUPABASE ----
             Button(
                 onClick = {
                     scope.launch {
-                        val lista = servicios.map {
-                            TempCita(
-                                mascotaNombre = it.mascotaNombre,
-                                servicioNombre = it.servicioNombre,
-                                fecha = it.fecha!!,
-                                horario = it.horario
-                            )
-                        }
+                        val lista = servicios.map { TempCita(
+                            mascotaNombre = it.mascotaNombre,
+                            servicioNombre = it.servicioNombre,
+                            fecha = it.fecha!!,
+                            horario = it.horario
+                        ) }
 
                         val ok = repo.guardarCitas(
                             viewModel.nombreCliente,
@@ -183,7 +165,10 @@ fun citas2 (
                             lista
                         )
 
-                        if (ok) navController.navigate("Menu")
+                        if(ok){
+                            viewModel.limpiarCitas()
+                            navController.navigate("Menu")
+                        }
                     }
                 },
                 enabled = servicios.isNotEmpty() &&
@@ -191,15 +176,15 @@ fun citas2 (
                         viewModel.numeroEmergencia.isNotBlank(),
                 modifier = Modifier.height(55.dp).width(250.dp),
                 colors = ButtonDefaults.buttonColors(primaryColor)
-            ) {
-                Text("Confirmar Cita", color = Color.White, fontSize = 20.sp)
+            ){
+                Text("Confirmar Cita", color=Color.White, fontSize=20.sp)
             }
         }
 
         Image(
             painter = painterResource(R.drawable.logo_negro),
             contentDescription = null,
-            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 10.dp).height(42.dp)
+            modifier = Modifier.align(Alignment.BottomCenter).padding(bottom=10.dp).height(42.dp)
         )
     }
 }

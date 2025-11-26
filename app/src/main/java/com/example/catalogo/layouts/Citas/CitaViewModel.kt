@@ -28,57 +28,35 @@ class CitaViewModel : ViewModel() {
     var horarioSeleccionadoTemp by mutableStateOf("")
 
 
-    // ------------------------------------------------
-    // ORDENAR POR FECHA + HORARIO
-    // ------------------------------------------------
+    // → Ordenar cita por fecha / horario
     private fun parseHorario(horario: String): Date {
         val format = SimpleDateFormat("h:mm a", Locale.US)
-        return try { format.parse(horario) ?: Date(0) }
-        catch (_: ParseException) { Date(0) }
+        return try { format.parse(horario) ?: Date(0) } catch (_: ParseException) { Date(0) }
     }
 
-    fun ordenarServicios() {
+    private fun ordenarServicios() {
         serviciosAgendados = serviciosAgendados.sortedWith(
-            compareBy<CitaItem> { it.fecha }
-                .thenBy { parseHorario(it.horario) }
+            compareBy<CitaItem> { it.fecha }.thenBy { parseHorario(it.horario) }
         )
     }
 
-
-    // ------------------------------------------------
-    // NUEVAS FUNCIONES (⚠ LAS QUE FALTABAN)
-    // ------------------------------------------------
-
-    /** Se usa cuando el usuario quiere agregar más servicios */
-    fun validarCitaLista(): Boolean {
-        return fechaSeleccionadaTemp != null && horarioSeleccionadoTemp.isNotBlank()
-    }
-
-    /** Se usa cuando quiere terminar y pasar a confirmación */
-    fun validarFinalizacion(): Boolean {
-        return serviciosAgendados.isNotEmpty()
-    }
-
-
-    // ------------------------------------------------
-    // Flujo principal
-    // ------------------------------------------------
+    // → Nueva asignación
     fun iniciarAsignacion(mascota: String, servicio: String) {
         fechaSeleccionadaTemp = null
         horarioSeleccionadoTemp = ""
         servicioEnProceso = CitaItem(mascota, servicio)
     }
 
+    // → CONFIRMA y ENVÍA A LISTA
     fun confirmarHorarioYAnadirALista(): Boolean {
         val actual = servicioEnProceso ?: return false
-        if(fechaSeleccionadaTemp == null || horarioSeleccionadoTemp.isBlank()) return false
+        if (fechaSeleccionadaTemp == null || horarioSeleccionadoTemp.isBlank()) return false
 
-        val final = actual.copy(
+        serviciosAgendados = serviciosAgendados + actual.copy(
             fecha = fechaSeleccionadaTemp,
             horario = horarioSeleccionadoTemp
         )
 
-        serviciosAgendados = serviciosAgendados + final
         ordenarServicios()
 
         servicioEnProceso = null
@@ -87,25 +65,16 @@ class CitaViewModel : ViewModel() {
         return true
     }
 
-
     fun eliminarServicio(item: CitaItem) {
         serviciosAgendados = serviciosAgendados.filter { it != item }
     }
 
-    fun tieneDatosTemporales(): Boolean {
-        return fechaSeleccionadaTemp != null && horarioSeleccionadoTemp.isNotBlank()
-    }
-
-    fun guardarCitaMaestra() {
-        if (nombreCliente.isNotBlank() && numeroEmergencia.isNotBlank() && serviciosAgendados.isNotEmpty()) {
-            println("------ CITA GUARDADA ------")
-            println("Cliente: $nombreCliente")
-            println("Emergencia: $numeroEmergencia")
-            serviciosAgendados.forEach {
-                println("${it.mascotaNombre} - ${it.servicioNombre} - ${it.fecha} - ${it.horario}")
-            }
-        } else {
-            println("❌ No se pudo guardar, faltan datos!")
-        }
+    fun limpiarCitas() {
+        serviciosAgendados = emptyList()
+        servicioEnProceso = null
+        fechaSeleccionadaTemp = null
+        horarioSeleccionadoTemp = ""
+        nombreCliente = ""
+        numeroEmergencia = ""
     }
 }
