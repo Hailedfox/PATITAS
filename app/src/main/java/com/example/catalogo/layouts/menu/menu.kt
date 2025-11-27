@@ -375,8 +375,7 @@ fun DrawerItem(title: String, iconResId: Int, color: Color, onClick: () -> Unit)
         Image(
             painter = painterResource(iconResId),
             contentDescription = null,
-            modifier = Modifier.size(24.dp),
-            colorFilter = ColorFilter.tint(color)
+            modifier = Modifier.size(24.dp)
         )
         Spacer(Modifier.width(16.dp))
         Text(

@@ -1,6 +1,5 @@
 package com.example.catalogo.layouts.ServiciosComplejos
 
-import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -29,8 +28,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import androidx.lifecycle.viewmodel.compose.viewModel
-
 import com.example.catalogo.layouts.perfil.getUriFromPrefs
+import com.example.catalogo.layouts.perfil.getClientIdFromPrefs
 import com.example.catalogo.layouts.Citas.CitaViewModel
 import com.example.catalogo.R
 import com.example.catalogo.layouts.menu.DrawerContent
@@ -52,12 +51,14 @@ fun ServiciosComplejos(
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
 
-    // 🔥 Cargar mascotas desde supabase igual que en ServiciosRapidos
-    LaunchedEffect(Unit) { mascotaVM.cargarMascotas() }
+    val context = LocalContext.current
+    val currentClientId = getClientIdFromPrefs(context)
+    val profilePhotoUri by remember { mutableStateOf(getUriFromPrefs(context)) }
+
+    LaunchedEffect(Unit) { mascotaVM.cargarMascotas(currentClientId) }
+
     val mascotas by mascotaVM.mascotas.collectAsState()
 
-    val context = LocalContext.current
-    val profilePhotoUri by remember { mutableStateOf(getUriFromPrefs(context)) }
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -79,7 +80,6 @@ fun ServiciosComplejos(
                 close()
             }
 
-            //================== ENCABEZADO ORIGINAL ==================
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -124,24 +124,24 @@ fun ServiciosComplejos(
                             .clickable { navController.navigate("MenuUsuario") },
                         contentAlignment = Alignment.Center
                     ) {
-                        if (profilePhotoUri != null)
+                        if (profilePhotoUri != null) {
                             AsyncImage(
                                 model = profilePhotoUri,
-                                contentDescription = null,
+                                contentDescription = "Foto de perfil",
                                 modifier = Modifier.fillMaxSize().clip(CircleShape),
                                 contentScale = ContentScale.Crop
                             )
-                        else
+                        } else {
                             Image(
-                                painterResource(R.drawable.usuario),
-                                null,
-                                Modifier.size(28.dp)
+                                painter = painterResource(R.drawable.usuario),
+                                contentDescription = "Perfil",
+                                modifier = Modifier.size(28.dp)
                             )
+                        }
                     }
                 }
             }
 
-            //================= TITULO =====================
             Surface(
                 modifier = Modifier
                     .padding(top = 170.dp)
@@ -161,7 +161,6 @@ fun ServiciosComplejos(
                 )
             }
 
-            //=================== CONTENIDO ======================
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -173,12 +172,10 @@ fun ServiciosComplejos(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
 
-                ServicioComplejoItem(R.drawable.cirugias, "Cirugías", mascotas, navController, citaViewModel)
-                ServicioComplejoItem(R.drawable.estetica, "Estética", mascotas, navController, citaViewModel)
-                ServicioComplejoItem(R.drawable.pension, "Pensión", mascotas, navController, citaViewModel)
+                ServicioComplejoItem(R.drawable.cirugias, "Cirugías", mascotas, navController, citaViewModel, tipoServicio = "complejo")
+                ServicioComplejoItem(R.drawable.estetica, "Estética", mascotas, navController, citaViewModel, tipoServicio = "complejo")
+                ServicioComplejoItem(R.drawable.pension, "Pensión", mascotas, navController, citaViewModel, tipoServicio = "complejo")
             }
-
-            //=================== LOGO ======================
             Box(
                 modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp)
             ) {
@@ -192,10 +189,6 @@ fun ServiciosComplejos(
     }
 }
 
-
-//=======================================================
-//   ITEM FINAL  — IGUAL A SERVICIOS RÁPIDOS PERO COMPLEJO
-//=======================================================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServicioComplejoItem(
@@ -203,7 +196,8 @@ fun ServicioComplejoItem(
     titulo: String,
     mascotas: List<MascotaDto>,
     navController: NavController,
-    citaViewModel: CitaViewModel
+    citaViewModel: CitaViewModel,
+    tipoServicio: String
 ) {
     var expanded by remember { mutableStateOf(false) }
     var selected by remember { mutableStateOf("") }
@@ -250,7 +244,7 @@ fun ServicioComplejoItem(
                             selected = m.nombre
                             expanded = false
                             citaViewModel.iniciarAsignacion(m.nombre, titulo)
-                            navController.navigate("Citas/complejo?mascotaNombre=${m.nombre}&servicioNombre=$titulo")
+                            navController.navigate("Citas/$tipoServicio?mascotaNombre=${m.nombre}&servicioNombre=$titulo")
                         }
                     )
                 }

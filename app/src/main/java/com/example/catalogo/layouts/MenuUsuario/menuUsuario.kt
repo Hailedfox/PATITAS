@@ -44,6 +44,7 @@ val colorFondoContenido = Color(0xFFEEEEEE)
 val colorTextoPrincipal = Color.DarkGray
 val colorTextoSeccion = Color.Black
 
+// --- FUNCIONES DE UTILIDAD (TU CÓDIGO FUNCIONAL) ---
 
 fun getPhotoFile(context: Context): File {
     val filesDir = context.externalCacheDir
@@ -51,35 +52,57 @@ fun getPhotoFile(context: Context): File {
 }
 
 fun saveUriToPrefs(context: Context, uri: Uri) {
-    val sharedPrefs = context.getSharedPreferences("user_profile_prefs", Context.MODE_PRIVATE)
+    // Reemplazado: "user_profile_prefs" -> "user_prefs"
+    val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
     sharedPrefs.edit {
         putString("profile_photo_uri", uri.toString())
     }
 }
 
 fun getUriFromPrefs(context: Context): Uri? {
-    val sharedPrefs = context.getSharedPreferences("user_profile_prefs", Context.MODE_PRIVATE)
+    // Reemplazado: "user_profile_prefs" -> "user_prefs"
+    val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
     val uriString = sharedPrefs.getString("profile_photo_uri", null)
     return uriString?.let { Uri.parse(it) }
 }
 
+fun getClientName(context: Context): String {
+    // Reemplazado: "user_profile_prefs" -> "user_prefs"
+    val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+    val nombrePila = sharedPrefs.getString("client_nombre_pila", "") ?: ""
+    val apellidoPaterno = sharedPrefs.getString("client_apellido_paterno", "") ?: ""
+
+    return if (nombrePila.isBlank()) "Usuario no logueado" else "$nombrePila $apellidoPaterno"
+}
+
+fun getClientEmail(context: Context): String {
+    // Reemplazado: "user_profile_prefs" -> "user_prefs"
+    val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+    return sharedPrefs.getString("client_email", "correo@ejemplo.com") ?: "correo@ejemplo.com"
+}
 // ----------------------------------------------------------------------
 
 @Composable
 fun MenuUsuario(navController: NavController) {
     val context = LocalContext.current
 
+    // Estas llamadas ahora encuentran las funciones definidas arriba
+    val userName by remember { mutableStateOf(getClientName(context)) }
+    val userEmail by remember { mutableStateOf(getClientEmail(context)) }
+
     var photoUri by remember { mutableStateOf(getUriFromPrefs(context)) }
 
     val file = remember { getPhotoFile(context) }
 
-    val cameraUri: Uri = remember {
-        FileProvider.getUriForFile(
+    fun getCameraUri(context: Context, file: File): Uri {
+        return FileProvider.getUriForFile(
             context,
-            "com.example.catalogo.fileprovider", // <-- Valor fijo
+            "com.example.catalogo.fileprovider",
             file
         )
     }
+
+    val cameraUri: Uri = remember { getCameraUri(context, file) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture(),
@@ -97,7 +120,6 @@ fun MenuUsuario(navController: NavController) {
         contract = ActivityResultContracts.RequestPermission(),
         onResult = { isGranted: Boolean ->
             if (isGranted) {
-
                 cameraLauncher.launch(cameraUri)
             } else {
                 Toast.makeText(context, "Permiso de cámara denegado.", Toast.LENGTH_SHORT).show()
@@ -128,6 +150,7 @@ fun MenuUsuario(navController: NavController) {
             lineTo(width, 0f); close()
         }
 
+        // --- ENCABEZADO Y BOTÓN DE REGRESAR ---
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -158,7 +181,7 @@ fun MenuUsuario(navController: NavController) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
-                    painter = painterResource(R.drawable.atras),
+                    painter = painterResource(id = R.drawable.atras),
                     contentDescription = "Regresar",
                     colorFilter = ColorFilter.tint(color = Color.White),
                     modifier = Modifier
@@ -168,6 +191,7 @@ fun MenuUsuario(navController: NavController) {
             }
         }
 
+        // --- FONDO GRIS DEL CONTENIDO ---
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -179,6 +203,7 @@ fun MenuUsuario(navController: NavController) {
                 )
         )
 
+        // --- FOTO DE PERFIL ---
         Box(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -187,9 +212,7 @@ fun MenuUsuario(navController: NavController) {
                 .clip(CircleShape)
                 .background(Color.White)
                 .border(2.dp, Color.LightGray, CircleShape)
-                .clickable {
-                    checkAndRequestPermission()
-                },
+                .clickable { checkAndRequestPermission() },
             contentAlignment = Alignment.Center
         ) {
             if (photoUri != null) {
@@ -221,59 +244,62 @@ fun MenuUsuario(navController: NavController) {
             )
         }
 
+        // --- CONTENIDO PRINCIPAL ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = 135.dp, bottom = 24.dp),
+                .padding(top = 135.dp)
+                .padding(horizontal = 30.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(start = 10.dp) ) {
 
-                Spacer(modifier = Modifier.height(65.dp))
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+
+                Spacer(modifier = Modifier.height(100.dp))
 
                 Text(
-                    text = "Usuario",
+                    text = userName,
                     fontWeight = FontWeight.Bold,
                     fontSize = 22.sp
                 )
 
+                Text(
+                    text = userEmail,
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                PerfilItem(title = "Añadir mascota") {}
+                PerfilItem(title = "Cambiar contraseña") {}
+                PerfilItem(title = "Eliminar cuenta") {}
+
                 Spacer(modifier = Modifier.height(14.dp))
 
-                // SECCIÓN 1: Cuenta
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp)) {
-                    PerfilItem(title = "Correo electrónico") {}
-                    PerfilItem(title = "Cambiar contraseña") {}
-                    PerfilItem(title = "Eliminar cuenta") {}
-                }
-
                 Divider(
-                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 24.dp),
+                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 0.dp),
                     color = Color.LightGray
                 )
+            }
 
-                Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 10.dp)) {
-                    PerfilItem(title = "Seguridad y Privacidad") {}
-                    PerfilItem(title = "Cuentas Bancarios") {}
-                    PerfilItem(title = "Ayuda") {}
-                    PerfilItem(title = "Contáctanos") {}
-                    PerfilItem(title = "Ubicaciones") {}
-                }
-
-                Divider(
-                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 24.dp),
-                    color = Color.LightGray
-                )
-
-                Column(modifier = Modifier
+            Column(
+                modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp)) {
-                    TextButton(onClick = { navController.navigate("Login") }) {
-                        Text(
-                            text = "Cerrar sesión",
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
+                    .padding(bottom = 20.dp),
+                horizontalAlignment = Alignment.Start
+            ) {
+                TextButton(onClick = {
+                    navController.navigate("Login")
+                }) {
+                    Text(
+                        text = "Cerrar sesión",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = Color.Red
+                    )
                 }
             }
         }

@@ -57,7 +57,6 @@ fun citas(
         listOf("2:00 PM","3:00 PM","4:00 PM","5:00 PM","6:00 PM")
     }
 
-    // ==== Mantiene mascota / servicio seleccionado
     LaunchedEffect(Unit) {
         if (viewModel.servicioEnProceso == null && mascotaNombre.isNotBlank())
             viewModel.iniciarAsignacion(mascotaNombre, servicioNombre)

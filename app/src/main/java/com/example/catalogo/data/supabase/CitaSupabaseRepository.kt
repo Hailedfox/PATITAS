@@ -1,7 +1,6 @@
 package com.example.catalogo.data.supabase
 
 import android.util.Log
-import com.example.catalogo.data.supabase.models.CitaDto
 import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -13,7 +12,6 @@ class CitaSupabaseRepository {
     private val client = SupabaseClient.client
     private val TAG = "CitaSupabaseRepo"
 
-    // Guarda UNA cita por cada servicio del ViewModel
     suspend fun guardarCitas(
         nombreCliente: String,
         numeroEmergencia: String,
@@ -31,7 +29,7 @@ class CitaSupabaseRepository {
                     "servicio_nombre" to cita.servicioNombre,
                     "fecha" to fechaFormateada,
                     "hora" to cita.horario,
-                    "estatus" to "Programada" // DEFAULT
+                    "estatus" to "Programada"
                 )
 
                 client.postgrest["citas"].insert(data)

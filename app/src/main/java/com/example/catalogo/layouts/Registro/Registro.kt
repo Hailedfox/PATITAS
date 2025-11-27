@@ -30,6 +30,8 @@ import com.example.catalogo.R
 import com.example.catalogo.data.BDCliente.AuthRepositoryImpl
 import com.example.catalogo.data.RegistroUseCase
 import com.example.catalogo.layouts.Registro.RegistroViewModel
+import androidx.compose.ui.platform.LocalContext // IMPORTADO
+import com.example.catalogo.layouts.perfil.saveClientIdToPrefs // IMPORTADO
 
 @Composable
 fun Registro(
@@ -51,6 +53,7 @@ fun Registro(
     val errorContraseña by viewModel.errorContraseña.observeAsState(null)
 
     val primaryColor = Color(0xFFD06A5B)
+    val context = LocalContext.current // ✅ CONTEXTO OBTENIDO
 
     Box(
         modifier = Modifier
@@ -188,6 +191,8 @@ fun Registro(
                 Button(
                     onClick = {
                         viewModel.onRegisterClicked { idCliente ->
+                            // 💥 GUARDAR EL ID DEL CLIENTE 💥
+                            saveClientIdToPrefs(context, idCliente)
                             navController.navigate("RegistroMascota/${idCliente.toString()}")
                         }
                     },

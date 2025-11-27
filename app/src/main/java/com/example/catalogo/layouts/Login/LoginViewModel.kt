@@ -28,14 +28,18 @@ class LoginViewModel(
         verifyLogin()
     }
 
-    fun onLoginSelected(onSuccess: () -> Unit, onError: () -> Unit) {
+    fun onLoginSelected(onSuccess: (user: UserEntity) -> Unit, onError: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             val user = loginUseCase(_uiState.value.email, _uiState.value.password)
             this@LoginViewModel.user = user
             _uiState.update { it.copy(isLoading = false, isUserLogged = user != null) }
 
-            if (user != null) onSuccess() else onError()
+            if (user != null) {
+                onSuccess(user)
+            } else {
+                onError()
+            }
         }
     }
 

@@ -24,14 +24,14 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.catalogo.R
-import com.example.catalogo.domain.Entity.UserEntity
-import com.example.catalogo.domain.Repository.AuthRepository
 import com.example.catalogo.domain.UseCase.LoginUseCase
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.ui.platform.LocalContext
 import coil.compose.AsyncImage
 import com.example.catalogo.data.BDCliente.AuthRepositoryImpl
 import com.example.catalogo.layouts.perfil.getUriFromPrefs
+import com.example.catalogo.layouts.perfil.saveClientDataToPrefs
+import com.example.catalogo.layouts.perfil.saveClientIdToPrefs
 
 
 @Composable
@@ -89,7 +89,7 @@ fun Login(
             )
         }
 
-        // Formulario
+        // Formulario (Column principal)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -97,6 +97,7 @@ fun Login(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
+            // Column interno para los elementos del formulario (arriba)
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 // Icono
                 Box(
@@ -182,7 +183,16 @@ fun Login(
                 Button(
                     onClick = {
                         viewModel.onLoginSelected(
-                            onSuccess = { navController.navigate("Menu") },
+                            onSuccess = { userEntity ->
+                                saveClientIdToPrefs(context, userEntity.id)
+                                saveClientDataToPrefs(
+                                    context,
+                                    userEntity.nombre,
+                                    userEntity.apellido_paterno,
+                                    userEntity.email
+                                )
+                                navController.navigate("Menu")
+                            },
                             onError = { errorMessage = "Usuario o contraseña incorrectos" }
                         )
                     },

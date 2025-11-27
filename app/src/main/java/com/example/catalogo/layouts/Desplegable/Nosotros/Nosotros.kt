@@ -210,18 +210,18 @@ fun nosotros(navController: NavController) {
                 fullContent = {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         Text(
-                            "📞 Teléfono Citas: +52 55 1234 5678",
+                            "📞 Teléfono Citas: +52 33 1778 0263",
                             fontFamily = montserratAlternatesFamily
                         )
-                        Text("📧 Email: info@vetapp.com", fontFamily = montserratAlternatesFamily)
+                        Text("📧 Email: Patitas@gmail.com", fontFamily = montserratAlternatesFamily)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            "📍 Dirección: Av. Mascota Feliz #101, Tlaquepaque, Jalisco.",
+                            "📍 Dirección: Av. Colon 653A zapopan cetro, Zapopan, 45140 Guadalajara, Jal.",
                             fontFamily = montserratAlternatesFamily
                         )
                     }
                 },
-                backgroundColor = Color.White // Fondo Blanco
+                backgroundColor = Color.White
             )
 
             Spacer(modifier = Modifier.height(20.dp))
