@@ -9,13 +9,7 @@ import io.github.jan.supabase.postgrest.postgrest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-/**
- * Implementacion de AuthRepository usando SOLO Supabase PostgREST
- * (sin GoTrue, sin Auth avanzada).
- *
- * Login: consulta directa a la tabla `cliente` con email + password
- * Registro: inserta fila en tabla `cliente` y devuelve el idcliente
- */
+
 class AuthRepositoryImpl : AuthRepository {
 
     private val client = SupabaseClient.client
@@ -24,7 +18,6 @@ class AuthRepositoryImpl : AuthRepository {
     override suspend fun doLogin(user: String, password: String): UserEntity? =
         withContext(Dispatchers.IO) {
             try {
-                // Buscar cliente por email y password
                 val clientes = client.postgrest["cliente"]
                     .select {
                         filter {
@@ -65,7 +58,6 @@ class AuthRepositoryImpl : AuthRepository {
                     )
                 )
 
-                // Volver a leer para obtener el idcliente
                 val clientes = client.postgrest["cliente"]
                     .select {
                         filter {
@@ -82,6 +74,22 @@ class AuthRepositoryImpl : AuthRepository {
             } catch (e: Exception) {
                 Log.e(TAG, "Error en registro Supabase: ${e.message}", e)
                 return@withContext Pair(false, null)
+            }
+        }
+    override suspend fun checkEmailExists(email: String): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                val clientes = client.postgrest["cliente"]
+                    .select {
+                        filter { eq("email", email)}
+                        limit (1)
+                    }
+                    .decodeList<ClienteDto>()
+
+                return@withContext clientes.isNotEmpty()
+            } catch (e: Exception) {
+                Log.e(TAG, "Error verificando email en Supabase: ${e.message}", e)
+                return@withContext false
             }
         }
 }

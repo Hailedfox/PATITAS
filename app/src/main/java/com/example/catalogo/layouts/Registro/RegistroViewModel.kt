@@ -78,7 +78,6 @@ class RegistroViewModel(
             return
         }
 
-        // Limpiar errores previos si las validaciones básicas pasaron
         _errorNombre.value = null
         _errorCorreo.value = null
         _errorContraseña.value = null
@@ -92,11 +91,17 @@ class RegistroViewModel(
                 password = contraseña
             )
 
-            val (success, idCliente) = registroUseCase(user)
+            val (success, idCliente, emailExists) = registroUseCase(user)
+
             if (success && idCliente != null) {
+                // Registro exitoso
                 onSuccess(idCliente)
+            } else if (emailExists) {
+                // Mensaje de correo existente
+                _errorCorreo.postValue("Este correo ya está registrado.")
             } else {
-                _errorCorreo.postValue("El correo ya está registrado o ocurrió un error")
+                // Otros errores
+                _errorCorreo.postValue("Ocurrió un error al intentar registrar.")
             }
         }
     }
