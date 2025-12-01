@@ -37,6 +37,7 @@ class CitaSupabaseRepository {
 
     suspend fun obtenerCitasPorClienteId(clienteId: Long): List<CitaDto> = withContext(Dispatchers.IO) {
         try {
+
             val result = client.postgrest["citas"].select(Columns.ALL) {
                 filter {
                     eq("id_cliente", clienteId)
@@ -50,6 +51,8 @@ class CitaSupabaseRepository {
         }
     }
 
+
+
     suspend fun guardarCitas(
         nombreCliente: String,
         numeroEmergencia: String,
@@ -59,7 +62,7 @@ class CitaSupabaseRepository {
             // Map the list of TempCita to a list of the new serializable DTO
             val citasToInsert = citas.map { cita ->
                 val fechaFormateada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cita.fecha)
-                CitaInsertDto(
+                CitaDto(
                     nombreCliente = nombreCliente,
                     numeroEmergencia = numeroEmergencia,
                     mascotaNombre = cita.mascotaNombre,
