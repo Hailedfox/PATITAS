@@ -5,6 +5,8 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CitaDto(
+    @SerialName("idcitas")
+    val idCita: Long,
     @SerialName("nombre_cliente")
     val nombreCliente: String,
     @SerialName("numero_emergencia")

@@ -6,10 +6,29 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+// Use a specific, serializable data class instead of a generic map
+@Serializable
+private data class CitaInsertDto(
+    @SerialName("nombre_cliente")
+    val nombreCliente: String,
+    @SerialName("numero_emergencia")
+    val numeroEmergencia: String,
+    @SerialName("mascota_nombre")
+    val mascotaNombre: String,
+    @SerialName("servicio_nombre")
+    val servicioNombre: String,
+    val fecha: String,
+    val hora: String,
+    val estatus: String,
+    @SerialName("id_cliente")
+    val idCliente: Int
+)
 
 class CitaSupabaseRepository {
 
@@ -18,7 +37,6 @@ class CitaSupabaseRepository {
 
     suspend fun obtenerCitasPorClienteId(clienteId: Long): List<CitaDto> = withContext(Dispatchers.IO) {
         try {
-
             val result = client.postgrest["citas"].select(Columns.ALL) {
                 filter {
                     eq("id_cliente", clienteId)
@@ -32,8 +50,6 @@ class CitaSupabaseRepository {
         }
     }
 
-
-
     suspend fun guardarCitas(
         nombreCliente: String,
         numeroEmergencia: String,
@@ -43,7 +59,7 @@ class CitaSupabaseRepository {
             // Map the list of TempCita to a list of the new serializable DTO
             val citasToInsert = citas.map { cita ->
                 val fechaFormateada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(cita.fecha)
-                CitaDto(
+                CitaInsertDto(
                     nombreCliente = nombreCliente,
                     numeroEmergencia = numeroEmergencia,
                     mascotaNombre = cita.mascotaNombre,
@@ -62,6 +78,23 @@ class CitaSupabaseRepository {
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error al guardar citas: ${e.message}", e)
+            false
+        }
+    }
+
+    suspend fun cancelarCita(citaId: Long): Boolean = withContext(Dispatchers.IO) {
+        try {
+            client.postgrest["citas"].update(
+                { set("estatus", "Cancelada") }
+            ) {
+                filter {
+                    eq("idcitas", citaId)
+                }
+            }
+            Log.i(TAG, "Cita $citaId cancelada con éxito")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al cancelar cita: ${e.message}", e)
             false
         }
     }

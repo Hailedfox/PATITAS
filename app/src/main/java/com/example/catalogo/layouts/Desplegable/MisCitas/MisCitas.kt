@@ -1,5 +1,6 @@
 package com.example.catalogo.layouts.Desplegable.MisCitas
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -23,6 +24,7 @@ import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -55,16 +57,14 @@ import com.example.catalogo.ui.theme.montserratAlternatesFamily
 import java.text.SimpleDateFormat
 import java.util.Locale
 
-// Altura total del footer fijo
 val FOOTER_HEIGHT = 80.dp
 
 @Composable
-fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel = viewModel()){
+fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel = viewModel()) {
     val primaryColor = Color(0xFFD06A5B)
     val accentColor = Color(0xFF16A085)
     val azulFecha = Color(0xFF5DADE2)
 
-    // foto de perfil
     val context = LocalContext.current
     val profilePhotoUri by remember { mutableStateOf(getUriFromPrefs(context)) }
 
@@ -101,7 +101,6 @@ fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel 
             close()
         }
 
-        // Encabezado con curva (Contenido superior)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -142,14 +141,16 @@ fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel 
                         .size(35.dp)
                         .clip(CircleShape)
                         .background(Color.White)
-                        .clickable { navController.navigate("MenuUsuario")},
+                        .clickable { navController.navigate("MenuUsuario") },
                     contentAlignment = Alignment.Center
                 ) {
                     if (profilePhotoUri != null) {
                         AsyncImage(
                             model = profilePhotoUri,
                             contentDescription = "Foto de perfil",
-                            modifier = Modifier.fillMaxSize().clip(CircleShape),
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
                             contentScale = ContentScale.Crop
                         )
                     } else {
@@ -163,7 +164,6 @@ fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel 
             }
         }
 
-        // Columna principal (Contenido scrollable)
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -213,11 +213,11 @@ fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel 
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // LazyColumn (Contenido con scroll)
             LazyColumn(
-                modifier = Modifier.fillMaxWidth().weight(1f),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
                 verticalArrangement = Arrangement.spacedBy(15.dp),
-                // Ajustamos el relleno inferior a la altura del footer para que el scroll se detenga antes de él.
                 contentPadding = PaddingValues(bottom = FOOTER_HEIGHT)
             ) {
                 val listToShow = if (isPendingSelected) pendingCitas else pastCitas
@@ -225,13 +225,14 @@ fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel 
                     CitaCard(
                         cita = cita,
                         dateColor = if (isPendingSelected) azulFecha else Color.Gray,
-                        accentColor = accentColor
+                        accentColor = accentColor,
+                        isCancelable = isPendingSelected,
+                        onCancelClick = { misCitasViewModel.cancelarCita(cita) }
                     )
                 }
             }
         }
 
-        // --- FOOTER FIJO CON FONDO BLANCO ---
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
@@ -252,7 +253,6 @@ fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel 
     }
 }
 
-// ... (Resto de funciones TabButton y CitaCard sin cambios)
 @Composable
 fun RowScope.TabButton(
     text: String,
@@ -277,81 +277,97 @@ fun RowScope.TabButton(
 }
 
 @Composable
-fun CitaCard(cita: CitaDto, dateColor: Color, accentColor: Color) {
-    val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
-    val date = try { inputFormat.parse(cita.fecha) } catch (e: Exception) { null }
+fun CitaCard(
+    cita: CitaDto,
+    dateColor: Color,
+    accentColor: Color,
+    isCancelable: Boolean,
+    onCancelClick: () -> Unit
+) {
+    val dateTimeString = "${cita.fecha} ${cita.hora}"
+    val inputFormat = SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.US)
+    val date = try { inputFormat.parse(dateTimeString) } catch (e: Exception) { null }
 
     val dayFormat = SimpleDateFormat("dd", Locale.getDefault())
     val monthFormat = SimpleDateFormat("MMM", Locale.getDefault())
-    val hourFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { /* Acción al seleccionar la cita */ },
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(25.dp),
         color = Color.White,
         shadowElevation = 2.dp
     ) {
-        Row(
-            modifier = Modifier
-                .padding(15.dp)
-                .fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(
-                modifier = Modifier
-                    .size(70.dp)
-                    .clip(RoundedCornerShape(33.dp))
-                    .background(dateColor),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+        Column(modifier = Modifier.padding(15.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = date?.let { dayFormat.format(it) } ?: "",
-                    color = Color.White,
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-                Text(
-                    text = date?.let { monthFormat.format(it).uppercase() } ?: "",
-                    color = Color.White,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-
-            Spacer(modifier = Modifier.size(15.dp))
-
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
-                Text(
-                    text = cita.servicioNombre,
-                    color = Color.Black,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "Mascota: ${cita.mascotaNombre}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Image(
-                        painter = painterResource(id = R.drawable.lupa),
-                        contentDescription = "Hora",
-                        modifier = Modifier.size(16.dp),
-                        colorFilter = ColorFilter.tint(accentColor)
-                    )
-                    Spacer(modifier = Modifier.size(6.dp))
+                Column(
+                    modifier = Modifier
+                        .size(70.dp)
+                        .clip(RoundedCornerShape(33.dp))
+                        .background(dateColor),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
-                        text = date?.let { hourFormat.format(it) } ?: "",
+                        text = date?.let { dayFormat.format(it) } ?: "",
+                        color = Color.White,
+                        fontSize = 24.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                    Text(
+                        text = date?.let { monthFormat.format(it).uppercase() } ?: "",
+                        color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.SemiBold
                     )
+                }
+
+                Spacer(modifier = Modifier.size(15.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = cita.servicioNombre,
+                        color = Color.Black,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Mascota: ${cita.mascotaNombre}",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(id = R.drawable.lupa),
+                            contentDescription = "Hora",
+                            modifier = Modifier.size(16.dp),
+                            colorFilter = ColorFilter.tint(accentColor)
+                        )
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text(
+                            text = cita.hora,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
+            if (isCancelable) {
+                Spacer(modifier = Modifier.height(16.dp))
+                OutlinedButton(
+                    onClick = onCancelClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Color(0xFFD32F2F)
+                    ),
+                    border = BorderStroke(1.dp, Color(0xFFD32F2F).copy(alpha = 0.5f))
+                ) {
+                    Text("Cancelar Cita", fontWeight = FontWeight.SemiBold)
                 }
             }
         }

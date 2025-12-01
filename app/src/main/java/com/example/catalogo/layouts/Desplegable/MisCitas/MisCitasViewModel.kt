@@ -20,8 +20,16 @@ class MisCitasViewModel : ViewModel() {
     fun cargarCitas() {
         viewModelScope.launch {
             _citas.value = citaRepository.obtenerCitasPorClienteId(clienteId)
-            println("Citas del cliente $clienteId: ${_citas.value}")
+        }
+    }
 
+    fun cancelarCita(cita: CitaDto) {
+        viewModelScope.launch {
+            val success = citaRepository.cancelarCita(cita.idCita)
+            if (success) {
+                // Recarga la lista de citas para reflejar el cambio
+                cargarCitas()
+            }
         }
     }
 }
