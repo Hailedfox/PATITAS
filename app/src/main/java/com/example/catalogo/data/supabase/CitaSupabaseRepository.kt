@@ -12,23 +12,6 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-// Use a specific, serializable data class instead of a generic map
-@Serializable
-private data class CitaInsertDto(
-    @SerialName("nombre_cliente")
-    val nombreCliente: String,
-    @SerialName("numero_emergencia")
-    val numeroEmergencia: String,
-    @SerialName("mascota_nombre")
-    val mascotaNombre: String,
-    @SerialName("servicio_nombre")
-    val servicioNombre: String,
-    val fecha: String,
-    val hora: String,
-    val estatus: String,
-    @SerialName("id_cliente")
-    val idCliente: Int
-)
 
 class CitaSupabaseRepository {
 
