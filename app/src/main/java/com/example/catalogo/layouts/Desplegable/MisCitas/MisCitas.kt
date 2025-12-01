@@ -26,6 +26,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,27 +44,22 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.catalogo.R
+import com.example.catalogo.data.supabase.models.CitaDto
+import com.example.catalogo.domain.UserSession
 import com.example.catalogo.layouts.perfil.getUriFromPrefs
 import com.example.catalogo.ui.theme.montserratAlternatesFamily
-
-data class Cita(
-    val id: Int,
-    val date: String,
-    val month: String,
-    val hour: String,
-    val service: String,
-    val petName: String,
-    val isPending: Boolean
-)
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 // Altura total del footer fijo
 val FOOTER_HEIGHT = 80.dp
 
 @Composable
-fun MisCitas(navController: NavController){
+fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel = viewModel()){
     val primaryColor = Color(0xFFD06A5B)
     val accentColor = Color(0xFF16A085)
     val azulFecha = Color(0xFF5DADE2)
@@ -73,21 +70,18 @@ fun MisCitas(navController: NavController){
 
     var isPendingSelected by remember { mutableStateOf(true) }
 
-    val allCitas = remember {
-        listOf(
-            Cita(1, "15", "OCT", "10:00 AM", "Baño y Corte", "Max", true),
-            Cita(2, "16", "NOV", "03:30 PM", "Consulta Veterinaria", "Luna", true),
-            Cita(3, "20", "NOV", "05:00 PM", "Consulta Veterinaria", "Kira", true),
-            Cita(4, "21", "NOV", "05:30 PM", "Vacunación", "Kira", true),
-            Cita(5, "22", "NOV", "06:00 PM", "Pensión", "Bongo", true),
-            Cita(6, "25", "NOV", "05:00 PM", "Pensión", "Dobby", true),
-            Cita(7, "05", "SEP", "11:00 AM", "Vacunación", "Toby", false),
-            Cita(8, "28", "AUG", "09:00 AM", "Peluquería", "Rocky", false)
-        )
+    val allCitas by misCitasViewModel.citas.collectAsState()
+
+    LaunchedEffect(Unit) {
+        val userId = UserSession.currentUser?.id?.toLong()
+        if (userId != null) {
+            misCitasViewModel.clienteId = userId
+            misCitasViewModel.cargarCitas()
+        }
     }
 
-    val pendingCitas = allCitas.filter { it.isPending }
-    val pastCitas = allCitas.filter { !it.isPending }
+    val pendingCitas = allCitas.filter { it.estatus.equals("Programada", ignoreCase = true) }
+    val pastCitas = allCitas.filter { !it.estatus.equals("Programada", ignoreCase = true) }
 
     Box(
         modifier = Modifier
@@ -230,7 +224,7 @@ fun MisCitas(navController: NavController){
                 items(listToShow) { cita ->
                     CitaCard(
                         cita = cita,
-                        dateColor = if (cita.isPending) azulFecha else Color.Gray,
+                        dateColor = if (isPendingSelected) azulFecha else Color.Gray,
                         accentColor = accentColor
                     )
                 }
@@ -283,7 +277,14 @@ fun RowScope.TabButton(
 }
 
 @Composable
-fun CitaCard(cita: Cita, dateColor: Color, accentColor: Color) {
+fun CitaCard(cita: CitaDto, dateColor: Color, accentColor: Color) {
+    val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
+    val date = try { inputFormat.parse(cita.fecha) } catch (e: Exception) { null }
+
+    val dayFormat = SimpleDateFormat("dd", Locale.getDefault())
+    val monthFormat = SimpleDateFormat("MMM", Locale.getDefault())
+    val hourFormat = SimpleDateFormat("hh:mm a", Locale.getDefault())
+
     Surface(
         modifier = Modifier
             .fillMaxWidth()
@@ -307,13 +308,13 @@ fun CitaCard(cita: Cita, dateColor: Color, accentColor: Color) {
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
-                    text = cita.date,
+                    text = date?.let { dayFormat.format(it) } ?: "",
                     color = Color.White,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold
                 )
                 Text(
-                    text = cita.month,
+                    text = date?.let { monthFormat.format(it).uppercase() } ?: "",
                     color = Color.White,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.SemiBold
@@ -326,56 +327,31 @@ fun CitaCard(cita: Cita, dateColor: Color, accentColor: Color) {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    text = "Cita de: ${cita.service}",
+                    text = cita.servicioNombre,
+                    color = Color.Black,
                     fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = Color.Black
+                    fontSize = 18.sp
                 )
-
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
-                    text = "Para: ${cita.petName}",
+                    text = "Mascota: ${cita.mascotaNombre}",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
-
-                Text(
-                    text = "Hora: ${cita.hour}",
-                    fontSize = 14.sp,
-                    color = Color.Gray
-                )
-
                 Spacer(modifier = Modifier.height(8.dp))
-
-                if (cita.isPending) {
-                    Button(
-                        onClick = { /* Acción para marcar como finalizada */ },
-                        colors = ButtonDefaults.buttonColors(containerColor = accentColor),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.height(35.dp)
-                    ) {
-                        Text(text = "Marcar como Finalizada", fontSize = 12.sp)
-                    }
-                } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Completada",
-                            color = accentColor,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp,
-                            modifier = Modifier.background(accentColor.copy(alpha = 0.1f), RoundedCornerShape(4.dp)).padding(horizontal = 6.dp, vertical = 2.dp)
-                        )
-                        Spacer(modifier = Modifier.weight(1f))
-                        Button(
-                            onClick = { /* Acción de reagendar */ },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray),
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.height(35.dp)
-                        ) {
-                            Text(text = "Reagendar", fontSize = 12.sp, color = Color.Black)
-                        }
-                    }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Image(
+                        painter = painterResource(id = R.drawable.lupa),
+                        contentDescription = "Hora",
+                        modifier = Modifier.size(16.dp),
+                        colorFilter = ColorFilter.tint(accentColor)
+                    )
+                    Spacer(modifier = Modifier.size(6.dp))
+                    Text(
+                        text = date?.let { hourFormat.format(it) } ?: "",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }

@@ -177,27 +177,32 @@ fun citas(
             // ==== BOTÓN → AGENDAR MÁS
             Button(
                 onClick = {
-                    if(viewModel.confirmarHorarioYAnadirALista())
-                        navController.navigate("Menu")
-                    else mensajeError = "⚠ Selecciona fecha y horario"
+
+                    val fecha = viewModel.fechaSeleccionadaTemp
+                    val hora = viewModel.horarioSeleccionadoTemp
+
+                    // Validación base existente
+                    if (fecha == null || hora.isBlank()) {
+                        mensajeError = "⚠ Selecciona fecha y horario"
+                        return@Button
+                    }
+
+
+                    // 🔥 Validación de horario disponible SIN ROMPER TU LÓGICA
+                    viewModel.validarHorario(fecha, hora) { disponible ->
+                        if (disponible) {
+                            if (viewModel.confirmarHorarioYAnadirALista()) {
+                                navController.navigate("citas2")
+                            }
+                        } else {
+                            mensajeError = "🟥 Ese horario ya está ocupado, elige otro"
+                        }
+                    }
                 },
                 modifier = Modifier.height(55.dp).width(250.dp),
                 colors = ButtonDefaults.buttonColors(primaryColor)
             ){
                 Text("Agendar más servicios", color=Color.White, fontSize=18.sp)
-            }
-
-            // ==== BOTÓN → IR A CONFIRMACIÓN
-            Button(
-                onClick = {
-                    if(viewModel.confirmarHorarioYAnadirALista() || viewModel.serviciosAgendados.isNotEmpty())
-                        navController.navigate("citas2")
-                    else mensajeError="⚠ Debes registrar mínimo 1 servicio"
-                },
-                modifier = Modifier.height(55.dp).width(250.dp).padding(top=10.dp),
-                colors = ButtonDefaults.buttonColors(Color.Gray)
-            ){
-                Text("Terminar de agendar", color=Color.White, fontSize=18.sp)
             }
 
             mensajeError?.let { Text(it, color=Color.Red, modifier=Modifier.padding(top=10.dp)) }

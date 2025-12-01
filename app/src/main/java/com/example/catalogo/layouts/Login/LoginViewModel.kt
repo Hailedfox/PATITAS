@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.catalogo.domain.Entity.UserEntity
 import com.example.catalogo.domain.UseCase.LoginUseCase
+import com.example.catalogo.domain.UserSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -36,6 +37,7 @@ class LoginViewModel(
             _uiState.update { it.copy(isLoading = false, isUserLogged = user != null) }
 
             if (user != null) {
+                UserSession.currentUser = user // Guardamos el usuario en la sesión
                 onSuccess(user)
             } else {
                 onError()

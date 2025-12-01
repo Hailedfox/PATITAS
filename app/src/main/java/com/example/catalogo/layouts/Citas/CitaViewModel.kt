@@ -4,6 +4,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -76,5 +78,31 @@ class CitaViewModel : ViewModel() {
         horarioSeleccionadoTemp = ""
         nombreCliente = ""
         numeroEmergencia = ""
+    }
+
+
+    // =====================================================
+    // 🚨 Lo siguiente fue AGREGADO para evitar duplicar citas
+    // =====================================================
+
+    /** 🔥 Verifica si fecha + horario ya existen en la lista */
+    fun horarioDisponibleLocal(fecha: Date, hora: String): Boolean {
+        return serviciosAgendados.none { it.fecha == fecha && it.horario == hora }
+    }
+
+    /** 🔥 Versión lista para usar desde tu pantalla */
+    fun validarHorario(fecha: Date?, hora: String, resultado: (Boolean) -> Unit) {
+        if (fecha == null || hora.isBlank()) {
+            resultado(false)
+            return
+        }
+
+        viewModelScope.launch {
+
+            val disponibleLocal = horarioDisponibleLocal(fecha, hora)
+
+            // Si está libre en la app → devuelve TRUE
+            resultado(disponibleLocal)
+        }
     }
 }

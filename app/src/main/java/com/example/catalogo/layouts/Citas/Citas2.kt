@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -30,6 +29,7 @@ import androidx.navigation.NavController
 import com.example.catalogo.R
 import com.example.catalogo.data.supabase.CitaSupabaseRepository
 import com.example.catalogo.data.supabase.TempCita
+import com.example.catalogo.domain.UserSession
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -156,7 +156,8 @@ fun citas2(
                             mascotaNombre = it.mascotaNombre,
                             servicioNombre = it.servicioNombre,
                             fecha = it.fecha!!,
-                            horario = it.horario
+                            horario = it.horario,
+                            id_cliente = UserSession.currentUser!!.id
                         ) }
 
                         val ok = repo.guardarCitas(

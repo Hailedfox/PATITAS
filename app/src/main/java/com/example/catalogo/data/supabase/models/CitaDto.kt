@@ -5,22 +5,17 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CitaDto(
-    @SerialName("idcitas")
-    val idCitas: Int = 0,
-    @SerialName("idmascota")
-    val idMascota: Int,
-    @SerialName("idservicio")
-    val idServicio: Int,
-    @SerialName("idempleado")
-    val idEmpleado: Int,
-    @SerialName("idcliente")
-    val idCliente: Int,
-    @SerialName("fecha")
+    @SerialName("nombre_cliente")
+    val nombreCliente: String,
+    @SerialName("numero_emergencia")
+    val numeroEmergencia: String,
+    @SerialName("mascota_nombre")
+    val mascotaNombre: String,
+    @SerialName("servicio_nombre")
+    val servicioNombre: String,
     val fecha: String,
-    @SerialName("hora")
     val hora: String,
-    @SerialName("estatus")
-    val estatus: String? = null,
-    @SerialName("tiposervicio")
-    val tipoServicio: String
+    val estatus: String,
+    @SerialName("id_cliente")
+    val idCliente: Int
 )
