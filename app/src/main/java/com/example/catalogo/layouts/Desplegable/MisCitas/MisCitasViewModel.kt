@@ -32,4 +32,13 @@ class MisCitasViewModel : ViewModel() {
             }
         }
     }
+    
+    fun completarCita(cita: CitaDto) {
+        viewModelScope.launch {
+            val success = citaRepository.completarCita(cita.idCita)
+            if (success) {
+                cargarCitas()
+            }
+        }
+    }
 }

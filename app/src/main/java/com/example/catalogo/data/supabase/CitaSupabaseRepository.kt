@@ -98,6 +98,23 @@ class CitaSupabaseRepository {
             false
         }
     }
+    
+    suspend fun completarCita(citaId: Long): Boolean = withContext(Dispatchers.IO) {
+        try {
+            client.postgrest["citas"].update(
+                { set("estatus", "Completada") }
+            ) {
+                filter {
+                    eq("idcitas", citaId)
+                }
+            }
+            Log.i(TAG, "Cita $citaId completada con éxito")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al completar cita: ${e.message}", e)
+            false
+        }
+    }
 }
 
 

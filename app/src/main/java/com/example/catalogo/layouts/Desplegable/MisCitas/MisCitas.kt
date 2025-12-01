@@ -55,6 +55,7 @@ import com.example.catalogo.domain.UserSession
 import com.example.catalogo.layouts.perfil.getUriFromPrefs
 import com.example.catalogo.ui.theme.montserratAlternatesFamily
 import java.text.SimpleDateFormat
+import java.util.Date
 import java.util.Locale
 
 val FOOTER_HEIGHT = 80.dp
@@ -226,8 +227,9 @@ fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel 
                         cita = cita,
                         dateColor = if (isPendingSelected) azulFecha else Color.Gray,
                         accentColor = accentColor,
-                        isCancelable = isPendingSelected,
-                        onCancelClick = { misCitasViewModel.cancelarCita(cita) }
+                        isPending = isPendingSelected,
+                        onCancelClick = { misCitasViewModel.cancelarCita(cita) },
+                        onCompleteClick = { misCitasViewModel.completarCita(cita) }
                     )
                 }
             }
@@ -281,8 +283,9 @@ fun CitaCard(
     cita: CitaDto,
     dateColor: Color,
     accentColor: Color,
-    isCancelable: Boolean,
-    onCancelClick: () -> Unit
+    isPending: Boolean,
+    onCancelClick: () -> Unit,
+    onCompleteClick: () -> Unit
 ) {
     val dateTimeString = "${cita.fecha} ${cita.hora}"
     val inputFormat = SimpleDateFormat("yyyy-MM-dd hh:mm a", Locale.US)
@@ -356,18 +359,29 @@ fun CitaCard(
                     }
                 }
             }
-            if (isCancelable) {
+            
+            if (isPending) {
                 Spacer(modifier = Modifier.height(16.dp))
-                OutlinedButton(
-                    onClick = onCancelClick,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFFD32F2F)
-                    ),
-                    border = BorderStroke(1.dp, Color(0xFFD32F2F).copy(alpha = 0.5f))
-                ) {
-                    Text("Cancelar Cita", fontWeight = FontWeight.SemiBold)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(
+                        onClick = onCancelClick,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFFD32F2F)
+                        ),
+                        border = BorderStroke(1.dp, Color(0xFFD32F2F).copy(alpha = 0.5f))
+                    ) {
+                        Text("Cancelar Cita", fontWeight = FontWeight.SemiBold)
+                    }
+                    Button(
+                        onClick = onCompleteClick,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = accentColor)
+                    ) {
+                        Text("Completar Cita", fontWeight = FontWeight.SemiBold)
+                    }
                 }
             }
         }
