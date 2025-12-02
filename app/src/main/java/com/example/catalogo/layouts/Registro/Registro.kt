@@ -31,6 +31,7 @@ import com.example.catalogo.data.BDCliente.AuthRepositoryImpl
 import com.example.catalogo.data.RegistroUseCase
 import com.example.catalogo.layouts.Registro.RegistroViewModel
 import androidx.compose.ui.platform.LocalContext // IMPORTADO
+import com.example.catalogo.domain.UserSession
 import com.example.catalogo.layouts.perfil.saveClientDataToPrefs
 import com.example.catalogo.layouts.perfil.saveClientIdToPrefs // IMPORTADO
 
@@ -200,6 +201,7 @@ fun Registro(
                                 userEntity.apellido_paterno,
                                 userEntity.email
                             )
+                            UserSession.currentUser = userEntity
 
                             // 3. Navegar
                             navController.navigate("RegistroMascota/${userEntity.id.toString()}")

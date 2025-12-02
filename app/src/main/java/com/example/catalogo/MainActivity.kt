@@ -32,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel // Import necesario
 import com.example.catalogo.layouts.Citas.CitaViewModel // Import necesario
 import com.example.catalogo.layouts.Desplegable.Expediente.expediente
 import com.example.catalogo.layouts.Desplegable.Nosotros.nosotros
+import com.example.catalogo.layouts.RegistroMascota.AnadirMascotaDesdeMenu
 
 class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
@@ -121,6 +122,10 @@ class MainActivity : ComponentActivity() {
 
                             composable(route = "Expediente"){
                                 expediente(navController = navController)
+                            }
+
+                            composable(route= "AñadirMascota"){
+                                AnadirMascotaDesdeMenu(navController = navController)
                             }
                         }
                     }

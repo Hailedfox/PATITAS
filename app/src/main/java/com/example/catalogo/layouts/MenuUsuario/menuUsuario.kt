@@ -319,7 +319,9 @@ fun MenuUsuario(navController: NavController) {
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                PerfilItem(title = "Añadir mascota") {}
+                PerfilItem(title = "Añadir mascota") {
+                    navController.navigate("AñadirMascota")
+                }
                 PerfilItem(title = "Cambiar contraseña") {}
 
                 PerfilItem(title = "Eliminar cuenta") {
