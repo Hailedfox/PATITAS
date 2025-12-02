@@ -84,9 +84,7 @@ class CitaSupabaseRepository {
 
     suspend fun cancelarCita(citaId: Long): Boolean = withContext(Dispatchers.IO) {
         try {
-            client.postgrest["citas"].update(
-                { set("estatus", "Cancelada") }
-            ) {
+            client.postgrest["citas"].delete {
                 filter {
                     eq("idcitas", citaId)
                 }

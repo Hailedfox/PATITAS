@@ -31,16 +31,26 @@ class CitaViewModel : ViewModel() {
 
 
     // → Ordenar cita por fecha / horario
-    private fun parseHorario(horario: String): Date {
-        val format = SimpleDateFormat("h:mm a", Locale.US)
-        return try { format.parse(horario) ?: Date(0) } catch (_: ParseException) { Date(0) }
-    }
 
     private fun ordenarServicios() {
         serviciosAgendados = serviciosAgendados.sortedWith(
-            compareBy<CitaItem> { it.fecha }.thenBy { parseHorario(it.horario) }
+            compareBy<CitaItem> { it.fecha }
+                .thenBy { parseHorario(it.horario) }
         )
     }
+
+    private fun parseHorario(horario: String): Date {
+        val format = SimpleDateFormat("h:mm a", Locale.ENGLISH)
+        return try {
+
+            format.parse(horario) ?: Date(0)
+        } catch (e: ParseException) {
+            println("Error al parsear horario: $horario. Usando fecha base (medianoche) como fallback.")
+            Date(0)
+        }
+    }
+
+
 
     // → Nueva asignación
     fun iniciarAsignacion(mascota: String, servicio: String) {
@@ -51,20 +61,25 @@ class CitaViewModel : ViewModel() {
 
     // → CONFIRMA y ENVÍA A LISTA
     fun confirmarHorarioYAnadirALista(): Boolean {
-        val actual = servicioEnProceso ?: return false
-        if (fechaSeleccionadaTemp == null || horarioSeleccionadoTemp.isBlank()) return false
+        val servicioActual = servicioEnProceso
 
-        serviciosAgendados = serviciosAgendados + actual.copy(
-            fecha = fechaSeleccionadaTemp,
-            horario = horarioSeleccionadoTemp
-        )
+        if (servicioActual != null && fechaSeleccionadaTemp != null && horarioSeleccionadoTemp.isNotBlank()) {
+            val itemCompleto = servicioActual.copy(
+                fecha = fechaSeleccionadaTemp,
+                horario = horarioSeleccionadoTemp
+            )
 
-        ordenarServicios()
+            serviciosAgendados = serviciosAgendados + itemCompleto
+            ordenarServicios()
 
-        servicioEnProceso = null
-        fechaSeleccionadaTemp = null
-        horarioSeleccionadoTemp = ""
-        return true
+
+            servicioEnProceso = null
+            fechaSeleccionadaTemp = null
+            horarioSeleccionadoTemp = ""
+
+            return true
+        }
+        return false
     }
 
     fun eliminarServicio(item: CitaItem) {
@@ -104,5 +119,8 @@ class CitaViewModel : ViewModel() {
             // Si está libre en la app → devuelve TRUE
             resultado(disponibleLocal)
         }
+    }
+    fun tieneDatosTemporales(): Boolean {
+        return fechaSeleccionadaTemp != null && horarioSeleccionadoTemp.isNotBlank()
     }
 }

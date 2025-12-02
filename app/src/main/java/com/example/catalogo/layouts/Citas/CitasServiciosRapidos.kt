@@ -69,7 +69,17 @@ fun citas(
     val datePickerDialog = DatePickerDialog(
         context,
         { _, y, m, d ->
-            viewModel.fechaSeleccionadaTemp = Calendar.getInstance().apply { set(y,m,d) }.time
+            // --- CÓDIGO CORREGIDO: Limpiar la hora para forzar medianoche ---
+            val selectedCalendar = Calendar.getInstance().apply { set(y,m,d) }
+
+            // Forzar HORA, MINUTO, SEGUNDO y MILISEGUNDO a cero
+            selectedCalendar.set(Calendar.HOUR_OF_DAY, 0)
+            selectedCalendar.set(Calendar.MINUTE, 0)
+            selectedCalendar.set(Calendar.SECOND, 0)
+            selectedCalendar.set(Calendar.MILLISECOND, 0)
+
+            viewModel.fechaSeleccionadaTemp = selectedCalendar.time
+            // -----------------------------------------------------------------
             mensajeError = null
         },
         calendar.get(Calendar.YEAR),
@@ -177,6 +187,23 @@ fun citas(
             // ==== BOTÓN → AGENDAR MÁS
             Button(
                 onClick = {
+                    if (viewModel.servicioEnProceso != null && viewModel.tieneDatosTemporales()) {
+                        viewModel.confirmarHorarioYAnadirALista()
+                        navController.navigate("Menu") {
+                            popUpTo("Menu") { inclusive = true }
+                        }
+                    } else {
+                        mensajeError = "Debes seleccionar una fecha y un horario para agendar más servicios."
+                    }
+                },
+                colors = ButtonDefaults.buttonColors(containerColor = Color.Gray),
+                modifier = Modifier.height(55.dp).width(250.dp).padding(bottom = 10.dp)
+            ) {
+                Text("Agendar Más Servicios", color = Color.White, fontSize = 18.sp)
+            }
+
+            Button(
+                onClick = {
 
                     val fecha = viewModel.fechaSeleccionadaTemp
                     val hora = viewModel.horarioSeleccionadoTemp
@@ -202,7 +229,7 @@ fun citas(
                 modifier = Modifier.height(55.dp).width(250.dp),
                 colors = ButtonDefaults.buttonColors(primaryColor)
             ){
-                Text("Agendar más servicios", color=Color.White, fontSize=18.sp)
+                Text("Terminar de agendar", color=Color.White, fontSize=18.sp)
             }
 
             mensajeError?.let { Text(it, color=Color.Red, modifier=Modifier.padding(top=10.dp)) }
