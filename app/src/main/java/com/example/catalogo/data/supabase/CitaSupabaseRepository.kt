@@ -32,6 +32,7 @@ private data class CitaInsertDto(
 
 class CitaSupabaseRepository {
 
+    // SOLUCIÓN: Definición de 'client' y 'TAG'
     private val client = SupabaseClient.client
     private val TAG = "CitaSupabaseRepo"
 
@@ -96,7 +97,7 @@ class CitaSupabaseRepository {
             false
         }
     }
-    
+
     suspend fun completarCita(citaId: Long): Boolean = withContext(Dispatchers.IO) {
         try {
             client.postgrest["citas"].update(
@@ -113,8 +114,31 @@ class CitaSupabaseRepository {
             false
         }
     }
-}
 
+    suspend fun verificarHorarioOcupado(fecha: Date, hora: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val fechaFormateada = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(fecha)
+
+            // SOLUCIÓN: Usar decodeList para verificar si se encontraron resultados.
+            val resultList = client.postgrest["citas"].select {
+                filter {
+                    eq("fecha", fechaFormateada)
+                    eq("hora", hora)
+                }
+            }.decodeList<CitaDto>()
+
+            // Si el tamaño de la lista es mayor que 0, significa que la cita existe y está OCUPADA.
+            val isOcupado = resultList.isNotEmpty()
+
+            Log.i(TAG, "Consulta Horario $fechaFormateada $hora: Ocupado=$isOcupado (Citas encontradas: ${resultList.size})")
+
+            return@withContext isOcupado // Retorna TRUE si está ocupado
+        } catch (e: Exception) {
+            Log.e(TAG, "Error al verificar horario ocupado: ${e.message}", e)
+            return@withContext true // Asumimos ocupado si hay error de conexión/consulta
+        }
+    }
+}
 
 // MODELO PARA GUARDAR SIMILAR A TU TABLA
 data class TempCita(

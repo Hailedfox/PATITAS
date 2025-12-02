@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.catalogo.data.supabase.CitaSupabaseRepository
 import kotlinx.coroutines.launch
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -18,7 +19,9 @@ data class CitaItem(
     val horario: String = ""
 )
 
-class CitaViewModel : ViewModel() {
+class CitaViewModel(
+    private val repository: CitaSupabaseRepository = CitaSupabaseRepository() // O inyectarlo adecuadamente
+) : ViewModel() {
 
     var serviciosAgendados by mutableStateOf(listOf<CitaItem>())
     var servicioEnProceso by mutableStateOf<CitaItem?>(null)
@@ -102,10 +105,21 @@ class CitaViewModel : ViewModel() {
 
     /** 🔥 Verifica si fecha + horario ya existen en la lista */
     fun horarioDisponibleLocal(fecha: Date, hora: String): Boolean {
-        return serviciosAgendados.none { it.fecha == fecha && it.horario == hora }
+        // Aseguramos que la comparación de fechas ignore la hora/minuto/segundo
+        val fechaSinHora = fecha.apply {
+            hours = 0; minutes = 0; seconds = 0 // Deprecated, but works with your existing logic
+        }
+
+        return serviciosAgendados.none {
+            // Limpia la hora de la cita agendada para la comparación de fechas
+            val itFechaSinHora = it.fecha?.apply {
+                hours = 0; minutes = 0; seconds = 0
+            }
+            itFechaSinHora == fechaSinHora && it.horario == hora
+        }
     }
 
-    /** 🔥 Versión lista para usar desde tu pantalla */
+
     fun validarHorario(fecha: Date?, hora: String, resultado: (Boolean) -> Unit) {
         if (fecha == null || hora.isBlank()) {
             resultado(false)
@@ -113,11 +127,23 @@ class CitaViewModel : ViewModel() {
         }
 
         viewModelScope.launch {
-
+            // 1. **VERIFICACIÓN LOCAL**: Checa si está en la lista de servicios a agendar
             val disponibleLocal = horarioDisponibleLocal(fecha, hora)
 
-            // Si está libre en la app → devuelve TRUE
-            resultado(disponibleLocal)
+            if (!disponibleLocal) {
+                // Ocupada localmente (por otro servicio en esta misma sesión)
+                resultado(false)
+                return@launch
+            }
+
+            // 2. **VERIFICACIÓN DE BASE DE DATOS**: Consulta a Supabase
+            // Esta función retorna TRUE si está OCUPADO en la DB.
+            val ocupadoEnDB = repository.verificarHorarioOcupado(fecha, hora)
+
+            // Si `ocupadoEnDB` es TRUE, entonces la disponibilidad final es FALSE.
+            val disponibleFinal = !ocupadoEnDB
+
+            resultado(disponibleFinal)
         }
     }
     fun tieneDatosTemporales(): Boolean {
