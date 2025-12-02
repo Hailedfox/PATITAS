@@ -8,4 +8,10 @@ interface AuthRepository {
     suspend fun checkEmailExists(email: String): Boolean
 
     suspend fun deleteClient(clientId: Int): Boolean
+
+    suspend fun updatePassword(
+        clientId: Int,
+        currentPassword: String,
+        newPassword: String
+    ): Boolean
 }

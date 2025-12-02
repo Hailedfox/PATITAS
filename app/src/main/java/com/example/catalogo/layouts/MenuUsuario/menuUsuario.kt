@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +29,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
@@ -37,8 +40,8 @@ import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.catalogo.R
 import com.example.catalogo.data.BDCliente.AuthRepositoryImpl
-import com.example.catalogo.domain.UseCase.DeleteClientUseCase // 👈 NUEVA IMPORTACIÓN
-import kotlinx.coroutines.launch // 👈 NUEVA IMPORTACIÓN
+import com.example.catalogo.domain.UseCase.DeleteClientUseCase
+import kotlinx.coroutines.launch
 import java.io.File
 
 
@@ -55,7 +58,6 @@ fun getPhotoFile(context: Context): File {
 }
 
 fun saveUriToPrefs(context: Context, uri: Uri) {
-    // Reemplazado: "user_profile_prefs" -> "user_prefs"
     val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
     sharedPrefs.edit {
         putString("profile_photo_uri", uri.toString())
@@ -63,14 +65,12 @@ fun saveUriToPrefs(context: Context, uri: Uri) {
 }
 
 fun getUriFromPrefs(context: Context): Uri? {
-    // Reemplazado: "user_profile_prefs" -> "user_prefs"
     val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
     val uriString = sharedPrefs.getString("profile_photo_uri", null)
     return uriString?.let { Uri.parse(it) }
 }
 
 fun getClientName(context: Context): String {
-    // Reemplazado: "user_profile_prefs" -> "user_prefs"
     val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
     val nombrePila = sharedPrefs.getString("client_nombre_pila", "") ?: ""
     val apellidoPaterno = sharedPrefs.getString("client_apellido_paterno", "") ?: ""
@@ -79,7 +79,6 @@ fun getClientName(context: Context): String {
 }
 
 fun getClientEmail(context: Context): String {
-    // Reemplazado: "user_profile_prefs" -> "user_prefs"
     val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
     return sharedPrefs.getString("client_email", "correo@ejemplo.com") ?: "correo@ejemplo.com"
 }
@@ -93,9 +92,23 @@ fun getClientId(context: Context): Int? {
 fun clearUserSessionData(context: Context) {
     val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
     sharedPrefs.edit {
-        clear() // Borra TODAS las preferencias del usuario (nombre, correo, ID, foto URI, etc.)
+        clear() // Borra TODAS las preferencias del usuario
     }
 }
+
+suspend fun updatePassword(
+    authRepository: AuthRepositoryImpl,
+    clientId: Int,
+    currentPassword: String,
+    newPassword: String
+): Boolean {
+    return try {
+        authRepository.updatePassword(clientId, currentPassword, newPassword)
+    } catch (e: Exception) {
+        false
+    }
+}
+
 
 // ----------------------------------------------------------------------
 
@@ -105,6 +118,7 @@ fun MenuUsuario(navController: NavController) {
     val scope = rememberCoroutineScope()
 
     var showDeleteDialog by remember { mutableStateOf(false) }
+    var showChangePasswordDialog by remember { mutableStateOf(false) }
 
     val authRepository = remember { AuthRepositoryImpl() }
     val deleteClientUseCase = remember { DeleteClientUseCase(authRepository) }
@@ -322,7 +336,9 @@ fun MenuUsuario(navController: NavController) {
                 PerfilItem(title = "Añadir mascota") {
                     navController.navigate("AñadirMascota")
                 }
-                PerfilItem(title = "Cambiar contraseña") {}
+                PerfilItem(title = "Cambiar contraseña") {
+                    showChangePasswordDialog = true
+                }
 
                 PerfilItem(title = "Eliminar cuenta") {
                     showDeleteDialog = true
@@ -343,6 +359,7 @@ fun MenuUsuario(navController: NavController) {
                 horizontalAlignment = Alignment.Start
             ) {
                 TextButton(onClick = {
+                    clearUserSessionData(context) // Asegúrate de borrar la sesión
                     navController.navigate("Login")
                 }) {
                     Text(
@@ -355,6 +372,29 @@ fun MenuUsuario(navController: NavController) {
             }
         }
     }
+
+    if (showChangePasswordDialog) {
+        ChangePasswordDialog(
+            onDismiss = { showChangePasswordDialog = false },
+            onPasswordChange = { currentPass, newPass ->
+                val clientId = getClientId(context)
+                if (clientId != null) {
+                    scope.launch {
+                        val success = updatePassword(authRepository, clientId, currentPass, newPass)
+                        if (success) {
+                            Toast.makeText(context, "Contraseña actualizada con éxito.", Toast.LENGTH_LONG).show()
+                            showChangePasswordDialog = false
+                        } else {
+                            Toast.makeText(context, "Error: Contraseña actual incorrecta o fallo al actualizar.", Toast.LENGTH_LONG).show()
+                        }
+                    }
+                } else {
+                    Toast.makeText(context, "Error: ID de usuario no disponible.", Toast.LENGTH_LONG).show()
+                }
+            }
+        )
+    }
+
 
     if (showDeleteDialog) {
         AlertDialog(
@@ -406,4 +446,111 @@ fun PerfilItem(title: String, onClick: () -> Unit) {
             color = colorTextoPrincipal
         )
     }
+}
+
+@Composable
+fun ChangePasswordDialog(
+    onDismiss: () -> Unit,
+    onPasswordChange: (currentPass: String, newPass: String) -> Unit
+) {
+    var currentPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var confirmNewPassword by remember { mutableStateOf("") }
+
+    val context = LocalContext.current
+
+    val MIN_LENGTH = 6
+    val isNewPasswordValid = newPassword.length >= MIN_LENGTH
+    val passwordsMatch = newPassword == confirmNewPassword
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Cambiar Contraseña") },
+        text = {
+            Column {
+                // Campo: Contraseña Actual (para confirmación)
+                OutlinedTextField(
+                    value = currentPassword,
+                    onValueChange = { currentPassword = it },
+                    label = { Text("Contraseña Actual") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Campo: Nueva Contraseña
+                OutlinedTextField(
+                    value = newPassword,
+                    onValueChange = { newPassword = it },
+                    label = { Text("Nueva Contraseña (Mínimo $MIN_LENGTH caracteres)") }, // Indicador para el usuario
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                //MENSAJE DE ERROR: Longitud mínima
+                if (newPassword.isNotEmpty() && newPassword.length < MIN_LENGTH) {
+                    Text(
+                        text = "Debe tener al menos $MIN_LENGTH caracteres.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Campo: Confirmar Nueva Contraseña
+                OutlinedTextField(
+                    value = confirmNewPassword,
+                    onValueChange = { confirmNewPassword = it },
+                    label = { Text("Confirmar Nueva Contraseña") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                // Mensaje de error de validación (contraseñas no coinciden)
+                if (newPassword.isNotEmpty() && confirmNewPassword.isNotEmpty() && !passwordsMatch) {
+                    Text(
+                        text = "Las nuevas contraseñas no coinciden.",
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (currentPassword.isBlank() || newPassword.isBlank() || confirmNewPassword.isBlank()) {
+                        Toast.makeText(context, "Todos los campos deben estar llenos.", Toast.LENGTH_SHORT).show()
+                        return@TextButton
+                    }
+                    if (!isNewPasswordValid) {
+                        Toast.makeText(context, "La nueva contraseña debe tener al menos $MIN_LENGTH caracteres.", Toast.LENGTH_SHORT).show()
+                        return@TextButton
+                    }
+                    if (!passwordsMatch) {
+                        Toast.makeText(context, "La nueva contraseña y la confirmación no coinciden.", Toast.LENGTH_SHORT).show()
+                        return@TextButton
+                    }
+
+                    // Llama a la función de cambio de contraseña
+                    onPasswordChange(currentPassword, newPassword)
+                },
+                // HABILITACIÓN DEL BOTÓN: Requiere 6 caracteres y que coincidan
+                enabled = currentPassword.isNotBlank() && isNewPasswordValid && passwordsMatch
+            ) {
+                Text("Cambiar")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancelar")
+            }
+        }
+    )
 }

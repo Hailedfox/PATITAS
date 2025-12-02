@@ -109,4 +109,46 @@ class AuthRepositoryImpl : AuthRepository {
                 return@withContext false
             }
         }
+
+    // ⭐ NUEVA FUNCIÓN: Implementación del cambio de contraseña
+    override suspend fun updatePassword(
+        clientId: Int,
+        currentPassword: String,
+        newPassword: String
+    ): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                // 1. Verificar la contraseña actual
+                val clientes = client.postgrest["cliente"]
+                    .select {
+                        filter {
+                            eq("idcliente", clientId)
+                            eq("password", currentPassword)
+                        }
+                    }
+                    .decodeList<ClienteDto>()
+
+                if (clientes.isEmpty()) {
+                    // Contraseña actual no coincide
+                    Log.w(TAG, "Intento fallido de cambio de contraseña para ID: $clientId. Contraseña actual incorrecta.")
+                    return@withContext false
+                }
+
+                // 2. Si coincide, actualizar la contraseña
+                client.postgrest["cliente"]
+                    .update(
+                        mapOf("password" to newPassword)
+                    ) {
+                        filter {
+                            eq("idcliente", clientId)
+                        }
+                    }
+
+                Log.i(TAG, "Contraseña actualizada exitosamente para ID: $clientId.")
+                return@withContext true
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al actualizar contraseña en Supabase: ${e.message}", e)
+                return@withContext false
+            }
+        }
 }
