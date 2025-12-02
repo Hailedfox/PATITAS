@@ -215,7 +215,6 @@ fun citas(
                     }
 
 
-                    // 🔥 Validación de horario disponible SIN ROMPER TU LÓGICA
                     viewModel.validarHorario(fecha, hora) { disponible ->
                         if (disponible) {
                             if (viewModel.confirmarHorarioYAnadirALista()) {
