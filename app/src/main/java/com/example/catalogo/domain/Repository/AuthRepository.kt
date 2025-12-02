@@ -6,4 +6,6 @@ interface AuthRepository {
     suspend fun doLogin(user: String, password: String): UserEntity?
     suspend fun registerUser(user: UserEntity): Pair<Boolean, Int?>
     suspend fun checkEmailExists(email: String): Boolean
+
+    suspend fun deleteClient(clientId: Int): Boolean
 }

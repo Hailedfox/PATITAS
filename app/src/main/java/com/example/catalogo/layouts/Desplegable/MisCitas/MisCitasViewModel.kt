@@ -27,7 +27,6 @@ class MisCitasViewModel : ViewModel() {
         viewModelScope.launch {
             val success = citaRepository.cancelarCita(cita.idCita)
             if (success) {
-                // Recarga la lista de citas para reflejar el cambio
                 cargarCitas()
             }
         }

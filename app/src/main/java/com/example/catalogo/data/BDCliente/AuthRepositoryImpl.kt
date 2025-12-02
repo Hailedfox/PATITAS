@@ -76,6 +76,7 @@ class AuthRepositoryImpl : AuthRepository {
                 return@withContext Pair(false, null)
             }
         }
+
     override suspend fun checkEmailExists(email: String): Boolean =
         withContext(Dispatchers.IO) {
             try {
@@ -89,6 +90,22 @@ class AuthRepositoryImpl : AuthRepository {
                 return@withContext clientes.isNotEmpty()
             } catch (e: Exception) {
                 Log.e(TAG, "Error verificando email en Supabase: ${e.message}", e)
+                return@withContext false
+            }
+        }
+
+    override suspend fun deleteClient(clientId: Int): Boolean =
+        withContext(Dispatchers.IO) {
+            try {
+                client.postgrest["cliente"]
+                    .delete {
+                        filter {
+                            eq("idcliente", clientId)
+                        }
+                    }
+                return@withContext true
+            } catch (e: Exception) {
+                Log.e(TAG, "Error al eliminar cliente en Supabase: ${e.message}", e)
                 return@withContext false
             }
         }

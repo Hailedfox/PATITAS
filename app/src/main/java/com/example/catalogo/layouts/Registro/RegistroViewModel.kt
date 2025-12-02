@@ -55,7 +55,7 @@ class RegistroViewModel(
     fun onConfirmarChanged(valor: String) { _confirmar.value = valor }
 
 
-    fun onRegisterClicked(onSuccess: (idCliente: Int) -> Unit) {
+    fun onRegisterClicked(onSuccess: (user: UserEntity) -> Unit) {
         val nombre = _nombre.value.orEmpty()
         val apellidoPaterno = _apellidoPaterno.value.orEmpty()
         val apellidoMaterno = _apellidoMaterno.value.orEmpty()
@@ -82,20 +82,28 @@ class RegistroViewModel(
         _errorCorreo.value = null
         _errorContraseña.value = null
 
-        viewModelScope.launch {
-            val user = UserEntity(
-                nombre = nombre,
-                apellido_paterno = apellidoPaterno,
-                apellido_materno = apellidoMaterno,
-                email = correo,
-                password = contraseña
-            )
+        // 1. Crear el objeto UserEntity aquí (fuera del launch)
+        val newUser = UserEntity(
+            nombre = nombre,
+            apellido_paterno = apellidoPaterno,
+            apellido_materno = apellidoMaterno,
+            email = correo,
+            password = contraseña
+        )
 
-            val (success, idCliente, emailExists) = registroUseCase(user)
+        viewModelScope.launch {
+
+            // 2. Usar newUser en el UseCase
+            val (success, idCliente, emailExists) = registroUseCase(newUser)
 
             if (success && idCliente != null) {
                 // Registro exitoso
-                onSuccess(idCliente)
+
+                // 3. Crear el objeto final con el ID asignado por la BD
+                val registeredUser = newUser.copy(id = idCliente)
+
+                // 4. Pasar el objeto completo (nombre, correo, id, etc.)
+                onSuccess(registeredUser) // 👈 PASAMOS EL OBJETO UserEntity
             } else if (emailExists) {
                 // Mensaje de correo existente
                 _errorCorreo.postValue("Este correo ya está registrado.")

@@ -31,6 +31,7 @@ import com.example.catalogo.data.BDCliente.AuthRepositoryImpl
 import com.example.catalogo.data.RegistroUseCase
 import com.example.catalogo.layouts.Registro.RegistroViewModel
 import androidx.compose.ui.platform.LocalContext // IMPORTADO
+import com.example.catalogo.layouts.perfil.saveClientDataToPrefs
 import com.example.catalogo.layouts.perfil.saveClientIdToPrefs // IMPORTADO
 
 @Composable
@@ -190,10 +191,18 @@ fun Registro(
 
                 Button(
                     onClick = {
-                        viewModel.onRegisterClicked { idCliente ->
-                            // 💥 GUARDAR EL ID DEL CLIENTE 💥
-                            saveClientIdToPrefs(context, idCliente)
-                            navController.navigate("RegistroMascota/${idCliente.toString()}")
+                        viewModel.onRegisterClicked { userEntity ->
+                            saveClientIdToPrefs(context, userEntity.id)
+
+                            saveClientDataToPrefs(
+                                context,
+                                userEntity.nombre,
+                                userEntity.apellido_paterno,
+                                userEntity.email
+                            )
+
+                            // 3. Navegar
+                            navController.navigate("RegistroMascota/${userEntity.id.toString()}")
                         }
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = primaryColor),

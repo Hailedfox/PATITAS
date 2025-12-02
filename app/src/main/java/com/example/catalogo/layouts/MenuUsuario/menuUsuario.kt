@@ -36,6 +36,9 @@ import androidx.core.content.edit
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.catalogo.R
+import com.example.catalogo.data.BDCliente.AuthRepositoryImpl
+import com.example.catalogo.domain.UseCase.DeleteClientUseCase // 👈 NUEVA IMPORTACIÓN
+import kotlinx.coroutines.launch // 👈 NUEVA IMPORTACIÓN
 import java.io.File
 
 
@@ -80,13 +83,32 @@ fun getClientEmail(context: Context): String {
     val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
     return sharedPrefs.getString("client_email", "correo@ejemplo.com") ?: "correo@ejemplo.com"
 }
+
+fun getClientId(context: Context): Int? {
+    val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+    val id = sharedPrefs.getInt("client_id", -1)
+    return if (id != -1) id else null
+}
+
+fun clearUserSessionData(context: Context) {
+    val sharedPrefs = context.getSharedPreferences("user_prefs", Context.MODE_PRIVATE)
+    sharedPrefs.edit {
+        clear() // Borra TODAS las preferencias del usuario (nombre, correo, ID, foto URI, etc.)
+    }
+}
+
 // ----------------------------------------------------------------------
 
 @Composable
 fun MenuUsuario(navController: NavController) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
-    // Estas llamadas ahora encuentran las funciones definidas arriba
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    val authRepository = remember { AuthRepositoryImpl() }
+    val deleteClientUseCase = remember { DeleteClientUseCase(authRepository) }
+
     val userName by remember { mutableStateOf(getClientName(context)) }
     val userEmail by remember { mutableStateOf(getClientEmail(context)) }
 
@@ -137,6 +159,31 @@ fun MenuUsuario(navController: NavController) {
             }
         }
     }
+
+    fun handleDeleteAccount() {
+        val clientId = getClientId(context)
+
+        if (clientId == null) {
+            Toast.makeText(context, "Error: No se encontró el ID de usuario.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        scope.launch {
+            val success = deleteClientUseCase(clientId)
+
+            if (success) {
+                clearUserSessionData(context)
+
+                navController.navigate("Login") {
+                    popUpTo(navController.graph.id) { inclusive = true }
+                }
+                Toast.makeText(context, "Tu cuenta ha sido eliminada con éxito.", Toast.LENGTH_LONG).show()
+            } else {
+                Toast.makeText(context, "Error: No se pudo eliminar la cuenta de la BD. Inténtalo de nuevo.", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
 
     Box(
         modifier = Modifier
@@ -244,7 +291,6 @@ fun MenuUsuario(navController: NavController) {
             )
         }
 
-        // --- CONTENIDO PRINCIPAL ---
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -275,7 +321,10 @@ fun MenuUsuario(navController: NavController) {
 
                 PerfilItem(title = "Añadir mascota") {}
                 PerfilItem(title = "Cambiar contraseña") {}
-                PerfilItem(title = "Eliminar cuenta") {}
+
+                PerfilItem(title = "Eliminar cuenta") {
+                    showDeleteDialog = true
+                }
 
                 Spacer(modifier = Modifier.height(14.dp))
 
@@ -303,6 +352,39 @@ fun MenuUsuario(navController: NavController) {
                 }
             }
         }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = {
+                showDeleteDialog = false
+            },
+            title = {
+                Text(text = "Confirmación de Eliminación")
+            },
+            text = {
+                Text(text = "¿Estás seguro que quieres eliminar tu cuenta? Esta acción es irreversible y borrará todos tus datos.")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                        handleDeleteAccount()
+                    }
+                ) {
+                    Text("Sí, Eliminar", color = Color.Red, fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteDialog = false
+                    }
+                ) {
+                    Text("No, Cancelar")
+                }
+            }
+        )
     }
 }
 
