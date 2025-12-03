@@ -28,8 +28,8 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import com.example.catalogo.layouts.Citas.citas2
 import com.example.catalogo.layouts.Desplegable.MisCitas.MisCitas
-import androidx.lifecycle.viewmodel.compose.viewModel // Import necesario
-import com.example.catalogo.layouts.Citas.CitaViewModel // Import necesario
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.catalogo.layouts.Citas.CitaViewModel
 import com.example.catalogo.layouts.Desplegable.Expediente.expediente
 import com.example.catalogo.layouts.Desplegable.Nosotros.nosotros
 import com.example.catalogo.layouts.RegistroMascota.AnadirMascotaDesdeMenu
@@ -116,8 +116,8 @@ class MainActivity : ComponentActivity() {
                                 citas2(navController = navController, viewModel = citaViewModel)
                             }
 
-                            composable(route = "Expediente") {
-                                expediente(navController = navController)
+                            composable(route = "nosotros") {
+                                nosotros(navController = navController)
                             }
 
 

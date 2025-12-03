@@ -47,6 +47,7 @@ import com.example.catalogo.layouts.perfil.getUriFromPrefs
 
 val appFontFamily = FontFamily.Default
 
+
 @Composable
 fun ExpandableInfoCard(
     title: String,
@@ -171,6 +172,10 @@ fun expediente(
 ) {
     val scrollState = rememberScrollState()
 
+    //foto de perfil
+    val context = LocalContext.current
+    val profilePhotoUri by remember { mutableStateOf(getUriFromPrefs(context)) }
+
     val idCliente = UserSession.currentUser?.id ?: 0
 
     val mascotas by viewModel.mascotas.collectAsState()
@@ -216,6 +221,48 @@ fun expediente(
                     },
                 contentScale = ContentScale.Fit
             )
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 70.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.atras),
+                    contentDescription = "Menú",
+                    colorFilter = ColorFilter.tint(color = Color.White),
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { navController.popBackStack() }
+                )
+                Box(
+                    modifier = Modifier
+                        .size(35.dp)
+                        .clip(CircleShape)
+                        .background(Color.White)
+                        .clickable { navController.navigate("MenuUsuario") },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (profilePhotoUri != null) {
+                        AsyncImage(
+                            model = profilePhotoUri,
+                            contentDescription = "Foto de perfil",
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
+                    } else {
+                        Image(
+                            painter = painterResource(R.drawable.usuario),
+                            contentDescription = "Perfil",
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
+            }
         }
 
         // Título -------------------------------------------------

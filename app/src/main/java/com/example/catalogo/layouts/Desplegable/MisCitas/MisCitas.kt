@@ -66,6 +66,7 @@ fun MisCitas(navController: NavController, misCitasViewModel: MisCitasViewModel 
     val accentColor = Color(0xFF16A085)
     val azulFecha = Color(0xFF5DADE2)
 
+    //foto de perfil
     val context = LocalContext.current
     val profilePhotoUri by remember { mutableStateOf(getUriFromPrefs(context)) }
 
