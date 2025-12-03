@@ -116,9 +116,10 @@ class MainActivity : ComponentActivity() {
                                 citas2(navController = navController, viewModel = citaViewModel)
                             }
 
-                            composable(route = "nosotros"){
-                                nosotros(navController = navController)
+                            composable(route = "Expediente") {
+                                expediente(navController = navController)
                             }
+
 
                             composable(route = "Expediente"){
                                 expediente(navController = navController)
