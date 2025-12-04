@@ -2,7 +2,7 @@ package com.example.catalogo.data.supabase
 
 import android.util.Log
 import com.example.catalogo.data.supabase.models.CitaDto
-import com.example.catalogo.domain.UserSession // Importación necesaria para el ID del cliente
+import com.example.catalogo.domain.UserSession
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import kotlinx.coroutines.Dispatchers
@@ -18,48 +18,50 @@ import java.util.Date
 import java.util.Locale
 import javax.net.ssl.HttpsURLConnection
 
+// ==========================================================
+// DTOs para Inserción en Supabase (REVERTIDO a nombres de DB)
+// ==========================================================
+
 @Serializable
 private data class CitaInsertDto(
-    @SerialName("nombre_cliente")
+    @SerialName("nombre_cliente") // <<--- REVERTIDO A NOMBRE DE COLUMNA DE SUPABASE
     val nombreCliente: String,
     @SerialName("numero_emergencia")
     val numeroEmergencia: String,
-    @SerialName("mascota_nombre")
+    @SerialName("mascota_nombre") // <<--- REVERTIDO A NOMBRE DE COLUMNA DE SUPABASE
     val mascotaNombre: String,
-    @SerialName("servicio_nombre")
+    @SerialName("servicio_nombre") // <<--- REVERTIDO A NOMBRE DE COLUMNA DE SUPABASE
     val servicioNombre: String,
-    val fecha: String, // Formato "yyyy-MM-dd"
-    val hora: String, // Horario de la cita
+    val fecha: String,
+    val hora: String,
     val estatus: String,
     @SerialName("id_cliente")
     val idCliente: Int
 )
 
 // ==========================================================
-// DTOs para Webhook (n8n)
+// DTOs para Webhook (n8n) (Mantenidos con tus nombres simplificados)
 // ==========================================================
 
-// Item individual de la cita para el payload del Webhook
 @Serializable
 data class CitaWebhookItem(
-    @SerialName("mascota_nombre")
+    @SerialName("mascota")
     val mascotaNombre: String,
-    @SerialName("servicio_nombre")
+    @SerialName("servicio")
     val servicioNombre: String,
     val fecha: String,
     val hora: String
 )
 
-// Payload completo que se envía al Webhook de n8n
 @Serializable
 data class WebhookPayload(
-    @SerialName("nombre_cliente")
+    @SerialName("cliente")
     val nombreCliente: String,
     @SerialName("numero_emergencia")
     val numeroEmergencia: String,
     @SerialName("id_cliente")
     val idCliente: Int,
-    @SerialName("email_cliente")
+    @SerialName("email")
     val emailCliente: String,
     val citas: List<CitaWebhookItem>
 )
@@ -74,10 +76,9 @@ class CitaSupabaseRepository {
     private val TAG = "CitaSupabaseRepo"
     private val WEBHOOK_URL = "https://emmap.app.n8n.cloud/webhook/confirmar-cita"
 
+    // ... (obtenerCitasPorClienteId se mantiene igual) ...
 
-    // Función para obtener citas (existente)
     suspend fun obtenerCitasPorClienteId(clienteId: Long): List<CitaDto> = withContext(Dispatchers.IO) {
-        // ... (Tu código existente para obtener citas)
         try {
             val result = client.postgrest["citas"].select(Columns.ALL) {
                 filter {
@@ -93,7 +94,7 @@ class CitaSupabaseRepository {
     }
 
 
-    // Función para guardar citas en Supabase (existente)
+    // Función para guardar citas en Supabase (CORREGIDA - utiliza los nombres de la DB)
     suspend fun guardarCitas(
         nombreCliente: String,
         numeroEmergencia: String,
@@ -105,10 +106,10 @@ class CitaSupabaseRepository {
             val citasToInsert = citas.map { cita ->
                 val fechaFormateada = dateFormat.format(cita.fecha)
                 CitaInsertDto(
-                    nombreCliente = nombreCliente,
+                    nombreCliente = nombreCliente, // Corresponde a 'nombre_cliente'
                     numeroEmergencia = numeroEmergencia,
-                    mascotaNombre = cita.mascotaNombre,
-                    servicioNombre = cita.servicioNombre,
+                    mascotaNombre = cita.mascotaNombre, // Corresponde a 'mascota_nombre'
+                    servicioNombre = cita.servicioNombre, // Corresponde a 'servicio_nombre'
                     fecha = fechaFormateada,
                     hora = cita.horario,
                     estatus = "Programada",
@@ -125,7 +126,7 @@ class CitaSupabaseRepository {
         }
     }
 
-    // 🚀 NUEVA FUNCIÓN: Enviar datos al Webhook de n8n
+    // 🚀 FUNCIÓN postWebhook (Se mantiene igual, solo se valida la lógica de UserSession)
     suspend fun postWebhook(
         nombreCliente: String,
         numeroEmergencia: String,
@@ -142,7 +143,7 @@ class CitaSupabaseRepository {
             )
         }
 
-        // Se usa el ID del cliente de la sesión actual
+        // Si 'UserSession.currentUser?.email' está dando problemas, revisa la propiedad 'email'.
         val clienteEmail = UserSession.currentUser?.email ?: ""
         val clienteId = UserSession.currentUser?.id ?: 0
 
@@ -150,7 +151,7 @@ class CitaSupabaseRepository {
             nombreCliente = nombreCliente,
             numeroEmergencia = numeroEmergencia,
             idCliente = clienteId,
-            emailCliente = clienteEmail, // 🚨 CAMBIO AQUI: Se añade el email
+            emailCliente = clienteEmail,
             citas = citasPayload
         )
 
@@ -172,7 +173,6 @@ class CitaSupabaseRepository {
             if (responseCode in 200..202) {
                 Log.i(TAG, "Webhook de n8n enviado con éxito. Código: $responseCode")
             } else {
-                // Leer el error del cuerpo de la respuesta de n8n si existe
                 val errorStream = connection.errorStream?.bufferedReader()?.use { it.readText() } ?: "No body"
                 Log.e(TAG, "Error al enviar Webhook. Código: $responseCode. Respuesta de n8n: $errorStream")
             }
@@ -181,7 +181,8 @@ class CitaSupabaseRepository {
             Log.e(TAG, "Excepción al enviar Webhook a n8n: ${e.message}", e)
         }
     }
-    // ... (Tu código existente para cancelarCita, completarCita, verificarHorarioOcupado)
+
+    // ... (Funciones de cancelar, completar, y verificarHorarioOcupado se mantienen igual) ...
 
     suspend fun cancelarCita(citaId: Long): Boolean = withContext(Dispatchers.IO) {
         try {
