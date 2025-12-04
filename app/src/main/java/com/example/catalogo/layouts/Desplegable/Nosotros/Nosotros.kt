@@ -213,7 +213,7 @@ fun nosotros(navController: NavController) {
                             "📞 Teléfono Citas: +52 33 1778 0263",
                             fontFamily = montserratAlternatesFamily
                         )
-                        Text("📧 Email: Patitas@gmail.com", fontFamily = montserratAlternatesFamily)
+                        Text("📧 Email:patitasarr06gmail.com", fontFamily = montserratAlternatesFamily)
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             "📍 Dirección: Av. Colon 653A zapopan cetro, Zapopan, 45140 Guadalajara, Jal.",

@@ -34,7 +34,6 @@ val montserratAlternatesFamily: FontFamily = FontFamily.Default
 val primaryColor = Color(0xFFD06A5B)
 val primaryColorMenu = Color(0xFFD06A5B)
 
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun citas(
@@ -47,6 +46,8 @@ fun citas(
 
     val context = LocalContext.current
     val calendar = Calendar.getInstance()
+
+
     var expanded by remember { mutableStateOf(false) }
     var mensajeError by remember { mutableStateOf<String?>(null) }
 
@@ -65,27 +66,32 @@ fun citas(
             viewModel.horarioSeleccionadoTemp = horariosDisponibles.first()
     }
 
-    // ==== DatePicker
     val datePickerDialog = DatePickerDialog(
         context,
+        android.R.style.Theme_DeviceDefault_Light_Dialog,
         { _, y, m, d ->
-            // --- CÓDIGO CORREGIDO: Limpiar la hora para forzar medianoche ---
-            val selectedCalendar = Calendar.getInstance().apply { set(y,m,d) }
+            val selectedCalendar = Calendar.getInstance(Locale("es")).apply { set(y,m,d) }
 
-            // Forzar HORA, MINUTO, SEGUNDO y MILISEGUNDO a cero
             selectedCalendar.set(Calendar.HOUR_OF_DAY, 0)
             selectedCalendar.set(Calendar.MINUTE, 0)
             selectedCalendar.set(Calendar.SECOND, 0)
             selectedCalendar.set(Calendar.MILLISECOND, 0)
 
+            if (selectedCalendar.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY) {
+                mensajeError = "❌ No se puede agendar citas los domingos."
+                viewModel.fechaSeleccionadaTemp = null
+                return@DatePickerDialog
+            }
+
             viewModel.fechaSeleccionadaTemp = selectedCalendar.time
-            // -----------------------------------------------------------------
             mensajeError = null
         },
         calendar.get(Calendar.YEAR),
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
-    ).apply { datePicker.minDate = System.currentTimeMillis() }
+    ).apply {
+        datePicker.minDate = System.currentTimeMillis()
+    }
 
 
     // UI

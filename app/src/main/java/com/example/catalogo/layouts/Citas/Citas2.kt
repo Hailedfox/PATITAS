@@ -167,6 +167,11 @@ fun citas2(
                         )
 
                         if(ok){
+                            repo.postWebhook(
+                                viewModel.nombreCliente,
+                                viewModel.numeroEmergencia,
+                                lista
+                            )
                             viewModel.limpiarCitas()
                             navController.navigate("Menu")
                         }
